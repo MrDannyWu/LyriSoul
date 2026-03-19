@@ -25,7 +25,7 @@ from models import LyricLine, LyricsResponse
 logger = logging.getLogger(__name__)
 
 LRCLIB_BASE = "https://lrclib.net/api"
-LRC_LINE_RE = re.compile(r"\[(\d+):(\d+\.\d+)\](.*)")
+LRC_TIMETAG_RE = re.compile(r"\[(\d+):(\d+\.\d+)\]")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Simple in-memory cache (artist+title → (timestamp, LyricsResponse))
@@ -61,18 +61,22 @@ def parse_lrc(lrc_text: str) -> list[LyricLine]:
     LRC format example:
         [00:17.35] Hello, it's me
         [00:22.90] I was wondering if after all these years...
+        [01:20.00][02:40.00] Multi-timestamp concatenation
     """
     lines: list[LyricLine] = []
     for raw_line in lrc_text.splitlines():
-        match = LRC_LINE_RE.match(raw_line.strip())
-        if not match:
+        raw_line = raw_line.strip()
+        tags = LRC_TIMETAG_RE.findall(raw_line)
+        if not tags:
             continue
-        minutes = int(match.group(1))
-        seconds = float(match.group(2))
-        text = match.group(3).strip()
-        time_ms = int((minutes * 60 + seconds) * 1000)
+            
+        # Extract the pure text by removing all timestamp tags
+        text = LRC_TIMETAG_RE.sub("", raw_line).strip()
+        
         if text:  # skip empty/instrumental lines
-            lines.append(LyricLine(time_ms=time_ms, text=text))
+            for minutes, seconds in tags:
+                time_ms = int((int(minutes) * 60 + float(seconds)) * 1000)
+                lines.append(LyricLine(time_ms=time_ms, text=text))
 
     return sorted(lines, key=lambda l: l.time_ms)
 
@@ -334,8 +338,9 @@ async def get_lyrics(artist: str, track: str, duration_ms: int = 0) -> LyricsRes
         synced_raw = raw.get("syncedLyrics") or ""
         plain_raw = raw.get("plainLyrics") or None
         
-    # If LRCLIB fails to find the track entirely, OR if it finds an entry but it has no lyrics, fallback!
-    if not synced_raw and not plain_raw:
+    # If LRCLIB fails to find the track entirely, OR if it finds an entry but it only has PLAIN lyrics,
+    # we heavily prioritize SYNCED lyrics, so we STILL execute the fallbacks to see if Netease has synced!
+    if not synced_raw:
         logger.info("Falling back to Netease Cloud Music for '%s' – '%s'", artist, track)
         netease_lrc = await search_lyrics_netease(artist, track, duration_ms)
         if netease_lrc:
