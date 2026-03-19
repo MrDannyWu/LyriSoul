@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lyrics — Spotify Player</title>
+  <meta name="description" content="Real-time synced lyrics for your Spotify music" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <!-- Dynamic Album Art Background -->
+  <div class="bg-canvas">
+    <img id="bg-album-art" src="" alt="" crossorigin="anonymous" />
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="bg-overlay"></div>
+    <div class="noise"></div>
+  </div>
+
+  <!-- ── Login Screen ─────────────────────────────────────── -->
+  <div id="login-screen" class="screen active">
+    <div class="login-card glass">
+      <!-- MAIN LOGIN VIEW -->
+      <div id="login-content">
+        <div class="app-logo">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="24" r="24" fill="url(#grad)" />
+            <path d="M14 30 Q18 16 24 20 Q30 24 34 12" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <circle cx="19" cy="26" r="2" fill="white" opacity="0.8"/>
+            <circle cx="29" cy="22" r="2" fill="white" opacity="0.8"/>
+            <defs>
+              <linearGradient id="grad" x1="0" y1="0" x2="48" y2="48">
+                <stop offset="0%" stop-color="#1DB954"/>
+                <stop offset="100%" stop-color="#0d7a35"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <h1 class="login-title">Lyrica</h1>
+        <p class="login-sub">实时同步歌词，跟随音乐律动</p>
+        <a id="login-btn" href="/auth/login" class="btn-login">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+          </svg>
+          使用 Spotify 登录
+        </a>
+        <p class="login-hint">需要 Spotify Premium / Free 账号</p>
+        <button id="btn-open-config" class="btn-icon-tiny" title="配置 Spotify 凭证">⚙️ 配置</button>
+      </div>
+
+      <!-- CONFIGURATION VIEW (Hidden by default) -->
+      <div id="config-content" class="hidden">
+        <h2 class="config-title">App Configuration</h2>
+        <p class="config-sub">Please enter your Spotify Developer credentials to connect to the API.</p>
+        
+        <div class="form-group">
+          <label for="cfg-client-id">Client ID</label>
+          <input type="text" id="cfg-client-id" placeholder="e.g. 1a2b3c4d5e..." autocomplete="off">
+        </div>
+        
+        <div class="form-group">
+          <label for="cfg-client-secret">Client Secret</label>
+          <input type="password" id="cfg-client-secret" placeholder="e.g. 5e4d3c2b1a..." autocomplete="off">
+        </div>
+        
+        <div class="form-group">
+          <label for="cfg-redirect-uri">Redirect URI</label>
+          <input type="text" id="cfg-redirect-uri" value="http://127.0.0.1:666/callback">
+        </div>
+
+        <div class="config-actions">
+          <button id="btn-cancel-config" class="btn-cancel">Cancel</button>
+          <button id="btn-save-config" class="btn-save">Save & Login</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Player Screen ────────────────────────────────────── -->
+  <div id="player-screen" class="screen">
+
+    <!-- Top bar -->
+    <header class="topbar glass-subtle">
+      <div class="topbar-left">
+        <div class="app-badge">
+          <span class="dot-green"></span>
+          Lyrica
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span id="user-name" class="user-label"></span>
+        <a href="/auth/logout" class="btn-small" id="logout-btn">退出</a>
+      </div>
+    </header>
+
+    <!-- Main layout -->
+    <main class="player-layout">
+
+      <!-- LEFT: Track info + visualizer -->
+      <aside class="track-panel">
+
+        <!-- Album Art -->
+        <div class="album-wrapper">
+          <div class="album-glow" id="album-glow"></div>
+          <img id="album-art" class="album-art" src="" alt="Album Art" crossorigin="anonymous" />
+          <div class="vinyl-ring"></div>
+        </div>
+
+        <!-- Track meta -->
+        <div class="track-meta">
+          <h2 id="track-name" class="track-name">—</h2>
+          <p id="artist-name" class="artist-name">—</p>
+          <p id="album-name" class="album-name-small">—</p>
+        </div>
+
+        <!-- Player Controls -->
+        <div class="player-controls">
+          <button class="control-btn" id="btn-shuffle" title="乱序">
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M13.151.922a.75.75 0 1 0-1.06 1.06L13.109 3H11.16a3.75 3.75 0 0 0-2.873 1.34l-6.173 7.356A2.25 2.25 0 0 1 .39 12.5H0V14h.391a3.75 3.75 0 0 0 2.873-1.34l6.173-7.356a2.25 2.25 0 0 1 1.724-.804h1.947l-1.017 1.018a.75.75 0 0 0 1.06 1.06L15.98 3.75 13.15.922zM.391 3.5H0V2h.391c1.109 0 2.16.49 2.873 1.34L4.89 5.277l-.979 1.167-1.796-2.14A2.25 2.25 0 0 0 .39 3.5z"/><path d="m7.5 10.723.98-1.167 1.795 2.14A2.25 2.25 0 0 0 11.996 12.5h1.95l-1.018-1.018a.75.75 0 1 1 1.06-1.06l2.829 2.828-2.829 2.828a.75.75 0 1 1-1.06-1.06L13.948 14H11.996a3.75 3.75 0 0 1-2.873-1.34l-1.623-1.937z"/></svg>
+          </button>
+          <button class="control-btn" id="btn-prev" title="上一首">
+            <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor"><path d="M3.3 1a.7.7 0 0 1 .7.7v5.15l9.95-5.744a.7.7 0 0 1 1.05.606v12.575a.7.7 0 0 1-1.05.607L4 9.149V14.3a.7.7 0 0 1-.7.7H1.7a.7.7 0 0 1-.7-.7V1.7a.7.7 0 0 1 .7-.7h1.6z"/></svg>
+          </button>
+          <button class="control-btn play-btn" id="btn-play-pause" title="播放/暂停">
+            <!-- Default to Play icon -->
+            <svg id="icon-play" viewBox="0 0 16 16" width="24" height="24" fill="currentColor"><path d="M3 1.713a.7.7 0 0 1 1.05-.607l10.89 6.288a.7.7 0 0 1 0 1.212L4.05 14.894A.7.7 0 0 1 3 14.288V1.713z"/></svg>
+            <svg id="icon-pause" viewBox="0 0 16 16" width="24" height="24" fill="currentColor" style="display:none;"><path d="M2.7 1a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7H2.7zm8 0a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-2.6z"/></svg>
+          </button>
+          <button class="control-btn" id="btn-next" title="下一首">
+            <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor"><path d="M12.7 1a.7.7 0 0 0-.7.7v5.15L2.05 1.106A.7.7 0 0 0 1 1.712v12.575a.7.7 0 0 0 1.05.607L12 9.149V14.3a.7.7 0 0 0 .7.7h1.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-1.6z"/></svg>
+          </button>
+          <button class="control-btn" id="btn-repeat" title="循环">
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+              <path d="M0 4.75A3.75 3.75 0 0 1 3.75 1h8.5A3.75 3.75 0 0 1 16 4.75v5a3.75 3.75 0 0 1-3.75 3.75H9.81l1.018 1.018a.75.75 0 1 1-1.06 1.06L6.939 12.75l2.829-2.828a.75.75 0 1 1 1.06 1.06L9.811 12h2.439a2.25 2.25 0 0 0 2.25-2.25v-5a2.25 2.25 0 0 0-2.25-2.25h-8.5A2.25 2.25 0 0 0 1.5 4.75v5A2.25 2.25 0 0 0 3.75 12H5v1.5H3.75A3.75 3.75 0 0 1 0 9.75v-5z"/>
+              <text id="repeat-track-num" x="8" y="8" font-size="8" font-weight="900" fill="currentColor" text-anchor="middle" dominant-baseline="middle" style="display:none">1</text>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="progress-section">
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-bg">
+              <div id="progress-bar" class="progress-bar-fill"></div>
+            </div>
+          </div>
+          <div class="progress-times">
+            <span id="time-current">0:00</span>
+            <span id="time-total">0:00</span>
+          </div>
+        </div>
+
+
+      </aside>
+
+      <!-- RIGHT: Lyrics -->
+      <section class="lyrics-panel">
+
+        <div class="lyrics-header">
+          <span class="lyrics-label">歌 词</span>
+          <span id="lyrics-source" class="lyrics-source-tag"></span>
+          <button id="btn-share-card" class="share-card-btn" title="分享歌词卡片">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+          </button>
+        </div>
+
+        <div id="lyrics-container" class="lyrics-container">
+          <div id="lyrics-idle" class="lyrics-idle">
+            <div class="idle-icon">🎵</div>
+            <p>正在等待音乐播放…</p>
+          </div>
+          <div id="lyrics-list" class="lyrics-list"></div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- Nothing playing overlay -->
+    <div id="nothing-playing" class="nothing-playing hidden">
+      <div class="np-content glass">
+        <div class="np-icon">⏸</div>
+        <p>当前没有音乐播放</p>
+        <p class="np-hint">打开 Spotify 开始播放吧</p>
+      </div>
+    </div>
+
+  </div><!-- /player-screen -->
+
+  <!-- Share Card Modal -->
+  <div id="share-modal" class="share-modal hidden">
+    <div class="share-modal-backdrop"></div>
+    <div class="share-modal-box">
+      <div class="share-modal-header">
+        <span class="share-modal-title">分享歌词卡片</span>
+        <button id="share-modal-close" class="share-close-btn">×</button>
+      </div>
+      <!-- Lyric picker -->
+      <div id="share-lyric-picker" class="share-lyric-picker"></div>
+      <!-- Canvas preview -->
+      <div class="share-canvas-wrap">
+        <canvas id="share-canvas"></canvas>
+      </div>
+      <div class="share-modal-actions">
+        <button id="btn-download-card" class="share-download-btn">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          下载卡片
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
