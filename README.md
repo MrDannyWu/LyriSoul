@@ -111,4 +111,9 @@ uvicorn main:app --reload --port 666
 | `/api/current-track` | GET | **核心接口**：获取当前播放媒体，包含串联执行的三重拦截歌词源和音频特征(Audio Features) |
 | `/api/player/{action}` | POST | 播放器控制器（单曲/切歌/循环等）|
 
+### 截图 
+![img_2.png](screenshots/img_2.png)
+![img.png](screenshots/img.png)
+![img_1.png](screenshots/img_1.png)
+![lyrica-天空之城.png](screenshots/lyrica-%E5%A4%A9%E7%A9%BA%E4%B9%8B%E5%9F%8E.png)
 > **Made out of ❤️ for music and code.**
