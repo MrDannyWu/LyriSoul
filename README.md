@@ -77,7 +77,7 @@ graph TD
 3. 取得 `Client ID` 和 `Client Secret`
 
 ### 2. 启动服务 (无需提前设置环境变量)
-克隆代码库并进入项目的主后端目录 `spotify_lyrics_app`。
+克隆代码库并进入项目的主后端目录 `lyrica`。
 
 ```bash
 # 激活虚拟环境 (可选)
