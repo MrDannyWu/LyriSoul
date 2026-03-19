@@ -44,10 +44,6 @@ graph TD
         Spot[Spotify Service Wrapper]
         
         subgraph Lyrics Engine
-            LRC[LRCLIB Primary]
-            Net[Netease Fallback]
-            Ku[KuGou Fallback]
-            LRC --> Net --> Ku
         end
         
         Auth --- API
