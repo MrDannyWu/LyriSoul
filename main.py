@@ -193,7 +193,7 @@ async def current_track(sp=Depends(require_spotify)):
     artist_name = track.artists[0].name if track.artists else ""
 
     lyrics_task = asyncio.create_task(
-        lyrics_client.get_lyrics(artist_name, track.name)
+        lyrics_client.get_lyrics(artist_name, track.name, getattr(track, 'duration_ms', 0))
     )
 
     # audio_features is a sync Spotipy call — run in threadpool
@@ -225,6 +225,7 @@ async def current_track(sp=Depends(require_spotify)):
 async def get_lyrics(
     artist: str = Query(..., description="Artist name", examples=["Adele"]),
     track: str = Query(..., description="Track/song name", examples=["Hello"]),
+    duration_ms: int = Query(0, description="Track duration in ms for fingerprinting matching"),
 ):
     """
     Fetch lyrics from LRCLIB without requiring Spotify authentication.
@@ -233,7 +234,7 @@ async def get_lyrics(
     Returns synced (LRC timestamped) lyrics when available,
     with plain-text lyrics as fallback.
     """
-    return await lyrics_client.get_lyrics(artist, track)
+    return await lyrics_client.get_lyrics(artist, track, duration_ms)
 
 
 @app.get(

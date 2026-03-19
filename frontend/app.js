@@ -9,22 +9,22 @@
 'use strict';
 
 /* ── Config ─────────────────────────────────────────────────────── */
-const API_BASE      = '';
+const API_BASE = '';
 const POLL_INTERVAL = 4000;   // ms between server polls for track/lyrics data
 
 /* ── State ──────────────────────────────────────────────────────── */
 let state = {
-  isPlaying:      false,
-  trackId:        null,
-  progressMs:     0,
-  durationMs:     0,
-  lastFetchTime:  0,
+  isPlaying: false,
+  trackId: null,
+  progressMs: 0,
+  durationMs: 0,
+  lastFetchTime: 0,
   _fetchPerfMark: 0,    // ← initialized so estimateProgressMs() doesn't return NaN
-  syncedLyrics:   [],   // [{ time_ms, text }] sorted ascending
-  plainLyrics:    null,
-  activeLineIdx:  -1,
-  pollTimer:      null,
-  rafId:          null,
+  syncedLyrics: [],   // [{ time_ms, text }] sorted ascending
+  plainLyrics: null,
+  activeLineIdx: -1,
+  pollTimer: null,
+  rafId: null,
 };
 // Debug: print key state every 8s so you can open DevTools Console to diagnose issues
 setInterval(() => {
@@ -41,37 +41,37 @@ setInterval(() => {
 /* ── DOM refs ───────────────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
 
-const loginScreen      = $('login-screen');
-const playerScreen     = $('player-screen');
-const loginContent     = $('login-content');
-const configContent    = $('config-content');
-const cfgClientId      = $('cfg-client-id');
-const cfgClientSecret  = $('cfg-client-secret');
-const cfgRedirectUri   = $('cfg-redirect-uri');
-const btnOpenConfig    = $('btn-open-config');
-const btnCancelConfig  = $('btn-cancel-config');
-const btnSaveConfig    = $('btn-save-config');
-const albumArt         = $('album-art');
-const albumGlow        = $('album-glow');
-const bgAlbumArt       = $('bg-album-art');
-const trackNameEl      = $('track-name');
-const artistNameEl     = $('artist-name');
-const btnShuffle       = $('btn-shuffle');
-const btnPrev          = $('btn-prev');
-const btnPlayPause     = $('btn-play-pause');
-const iconPlay         = $('icon-play');
-const iconPause        = $('icon-pause');
-const btnNext          = $('btn-next');
-const btnRepeat        = $('btn-repeat');
-const progressBarFill  = $('progress-bar');
-const timeCurrent      = $('time-current');
-const timeTotal        = $('time-total');
-const lyricsList       = $('lyrics-list');
-const lyricsIdle       = $('lyrics-idle');
-const lyricsContainer  = $('lyrics-container');
-const nothingPlaying   = $('nothing-playing');
-const userNameEl       = $('user-name');
-const lyricsSource     = $('lyrics-source');
+const loginScreen = $('login-screen');
+const playerScreen = $('player-screen');
+const loginContent = $('login-content');
+const configContent = $('config-content');
+const cfgClientId = $('cfg-client-id');
+const cfgClientSecret = $('cfg-client-secret');
+const cfgRedirectUri = $('cfg-redirect-uri');
+const btnOpenConfig = $('btn-open-config');
+const btnCancelConfig = $('btn-cancel-config');
+const btnSaveConfig = $('btn-save-config');
+const albumArt = $('album-art');
+const albumGlow = $('album-glow');
+const bgAlbumArt = $('bg-album-art');
+const trackNameEl = $('track-name');
+const artistNameEl = $('artist-name');
+const btnShuffle = $('btn-shuffle');
+const btnPrev = $('btn-prev');
+const btnPlayPause = $('btn-play-pause');
+const iconPlay = $('icon-play');
+const iconPause = $('icon-pause');
+const btnNext = $('btn-next');
+const btnRepeat = $('btn-repeat');
+const progressBarFill = $('progress-bar');
+const timeCurrent = $('time-current');
+const timeTotal = $('time-total');
+const lyricsList = $('lyrics-list');
+const lyricsIdle = $('lyrics-idle');
+const lyricsContainer = $('lyrics-container');
+const nothingPlaying = $('nothing-playing');
+const userNameEl = $('user-name');
+const lyricsSource = $('lyrics-source');
 
 // State flags for optimistic updates
 let _isTogglingPlay = false;
@@ -82,7 +82,7 @@ function formatTime(ms) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
-function lerp(a, b, t)    { return a + (b - a) * t; }
+function lerp(a, b, t) { return a + (b - a) * t; }
 
 /* ── Real-time progress estimate ────────────────────────────────── */
 function estimateProgressMs() {
@@ -92,23 +92,23 @@ function estimateProgressMs() {
 
 /* ── Mood / Background ──────────────────────────────────────────── */
 const PALETTES = {
-  happy:       { a: '#ff6b35', b: '#ffd700', c: '#ff0080' },
-  angry:       { a: '#ff0040', b: '#cc0000', c: '#ff6600' },
-  peaceful:    { a: '#00d4ff', b: '#0080ff', c: '#00ff88' },
+  happy: { a: '#ff6b35', b: '#ffd700', c: '#ff0080' },
+  angry: { a: '#ff0040', b: '#cc0000', c: '#ff6600' },
+  peaceful: { a: '#00d4ff', b: '#0080ff', c: '#00ff88' },
   melancholic: { a: '#1a1aff', b: '#6600cc', c: '#00ccaa' },
-  default:     { a: '#1a1aff', b: '#6600cc', c: '#00ccaa' },
+  default: { a: '#1a1aff', b: '#6600cc', c: '#00ccaa' },
 };
 
 function applyMood(f) {
   if (!f) return;
   const mood =
-    f.valence >= 0.6 && f.energy >= 0.6 ? 'happy'       :
-    f.valence <  0.4 && f.energy >= 0.6 ? 'angry'       :
-    f.valence >= 0.6 && f.energy <  0.4 ? 'peaceful'    : 'melancholic';
+    f.valence >= 0.6 && f.energy >= 0.6 ? 'happy' :
+      f.valence < 0.4 && f.energy >= 0.6 ? 'angry' :
+        f.valence >= 0.6 && f.energy < 0.4 ? 'peaceful' : 'melancholic';
 
-  const p     = PALETTES[mood];
+  const p = PALETTES[mood];
   const speed = clamp(lerp(28, 8, f.energy), 8, 30).toFixed(1);
-  const root  = document.documentElement;
+  const root = document.documentElement;
   root.style.setProperty('--mood-a', p.a);
   root.style.setProperty('--mood-b', p.b);
   root.style.setProperty('--mood-c', p.c);
@@ -152,8 +152,8 @@ function renderNoLyrics() {
 }
 
 /* ── Scroll: centre active line in container ─────────────────────── */
-let _scrollTarget    = null;
-let _lastUserScroll  = 0;       // timestamp of last user scroll gesture (ms)
+let _scrollTarget = null;
+let _lastUserScroll = 0;       // timestamp of last user scroll gesture (ms)
 const SCROLL_PAUSE_MS = 2000;   // how long to pause auto-scroll after user scrolls
 
 // Hint pill
@@ -175,12 +175,12 @@ function _setHintVisible(v) { _ensureHint(); _hintEl.style.opacity = v ? '1' : '
 if (lyricsContainer) {
   const onUserScroll = () => {
     _lastUserScroll = Date.now();
-    _scrollTarget   = null; // cancel any in-progress auto-scroll animation
+    _scrollTarget = null; // cancel any in-progress auto-scroll animation
     _setHintVisible(true);
   };
-  lyricsContainer.addEventListener('wheel',      onUserScroll, { passive: true });
+  lyricsContainer.addEventListener('wheel', onUserScroll, { passive: true });
   lyricsContainer.addEventListener('touchstart', onUserScroll, { passive: true });
-  lyricsContainer.addEventListener('touchmove',  onUserScroll, { passive: true });
+  lyricsContainer.addEventListener('touchmove', onUserScroll, { passive: true });
 }
 
 // Check every 200ms whether we should hide the hint
@@ -203,15 +203,15 @@ function _isUserScrolling() {
 function scrollToLine(el) {
   if (!el || _isUserScrolling()) return; // don't interfere while user is browsing
   const containerH = lyricsContainer.clientHeight;
-  const lineTop    = el.offsetTop;
-  const lineH      = el.offsetHeight;
+  const lineTop = el.offsetTop;
+  const lineH = el.offsetHeight;
   _scrollTarget = lineTop - containerH / 2 + lineH / 2;
 }
 
 function smoothScrollTick() {
   if (_scrollTarget === null || _isUserScrolling()) return;
   const current = lyricsContainer.scrollTop;
-  const dist    = _scrollTarget - current;
+  const dist = _scrollTarget - current;
   if (Math.abs(dist) < 0.5) {
     lyricsContainer.scrollTop = _scrollTarget;
     _scrollTarget = null;
@@ -246,8 +246,8 @@ function syncLoop() {
       // Mark from 0..idx-1 as past (handle seeking)
       lyricsList.querySelectorAll('.lyric-line').forEach((el, i) => {
         el.classList.remove('active', 'past', 'upcoming');
-        if      (i < idx)  el.classList.add('past');
-        else if (i > idx)  el.classList.add('upcoming');
+        if (i < idx) el.classList.add('past');
+        else if (i > idx) el.classList.add('upcoming');
       });
 
       // Activate current
@@ -273,10 +273,10 @@ function updateTrack(data) {
 
   // Always update server-side progress anchor
   const prevProgressMs = state.progressMs;
-  state.progressMs      = track.progress_ms;
-  state.durationMs      = track.duration_ms;
-  state.lastFetchTime   = Date.now();
-  state._fetchPerfMark  = performance.now();
+  state.progressMs = track.progress_ms;
+  state.durationMs = track.duration_ms;
+  state.lastFetchTime = Date.now();
+  state._fetchPerfMark = performance.now();
 
   // Smart is_playing: trust the API, but if progress advanced, we know music is playing
   // This guards against Spotify's occasional reporting lag (returns is_playing: false while audibly playing)
@@ -286,13 +286,13 @@ function updateTrack(data) {
   timeTotal.textContent = formatTime(track.duration_ms);
 
   if (trackChanged) {
-    state.trackId       = track.id;
+    state.trackId = track.id;
     state.activeLineIdx = -1;
-    _scrollTarget       = 0;
+    _scrollTarget = 0;
 
     // UI: track title & artist
-    trackNameEl.textContent  = track.name;
-    trackNameEl.title        = track.name;
+    trackNameEl.textContent = track.name;
+    trackNameEl.title = track.name;
     artistNameEl.textContent = track.artists.map(a => a.name).join(', ');
 
     // Album art cross-fade
@@ -318,7 +318,7 @@ function updateTrack(data) {
   const lyricsAreMissing = state.syncedLyrics.length === 0 && !state.plainLyrics;
   if (trackChanged || lyricsAreMissing) {
     state.syncedLyrics = lyrics.synced || [];
-    state.plainLyrics  = lyrics.plain   || null;
+    state.plainLyrics = lyrics.plain || null;
     const srcKey = lyrics.has_synced ? 'lrc_synced' : 'lrc_plain';
     lyricsSource.setAttribute('data-i18n', srcKey);
     lyricsSource.textContent = window.i18n ? window.i18n.t(srcKey) : (lyrics.has_synced ? 'Synced' : 'Plain');
@@ -344,12 +344,12 @@ function updateTrack(data) {
       iconPause.style.display = 'none';
     }
   }
-  
+
   if (track.shuffle_state) btnShuffle.classList.add('active');
-  else                     btnShuffle.classList.remove('active');
+  else btnShuffle.classList.remove('active');
 
   // Sync repeat state (off | context | track) including single-track indicator
-  const rs  = track.repeat_state || 'off';
+  const rs = track.repeat_state || 'off';
   const num = document.getElementById('repeat-track-num');
   btnRepeat.dataset.state = rs;
   if (rs === 'off') {
@@ -369,13 +369,13 @@ async function fetchCurrentTrack() {
   try {
     const res = await fetch(`${API_BASE}/api/current-track`, { credentials: 'include' });
     if (res.status === 204) { showNothingPlaying(); return; }
-    if (res.status === 401) { showLogin();          return; }
-    if (!res.ok)            { console.warn('API', res.status); return; }
+    if (res.status === 401) { showLogin(); return; }
+    if (!res.ok) { console.warn('API', res.status); return; }
     hideNothingPlaying();
     const data = await res.json();
     // Debug: log key fields so you can diagnose lyrics/scrolling issues in DevTools Console
     console.debug('[Lyrica] track poll:', {
-      id: data.track?.id?.slice(0,8),
+      id: data.track?.id?.slice(0, 8),
       is_playing: data.track?.is_playing,
       progress_ms: data.track?.progress_ms,
       has_synced: data.lyrics?.has_synced,
@@ -404,7 +404,7 @@ async function saveConfig() {
     alert(window.i18n ? window.i18n.t('msg_req_client_id') : 'Please enter Client ID and Secret');
     return;
   }
-  
+
   const oldTxt = btnSaveConfig.textContent;
   const oldI18n = btnSaveConfig.getAttribute('data-i18n');
   btnSaveConfig.setAttribute('data-i18n', 'msg_saving');
@@ -446,7 +446,7 @@ async function controlPlayer(action, params = {}) {
       credentials: 'include'
     });
     // Accelerate the next poll for immediate sync
-    setTimeout(fetchCurrentTrack, 500); 
+    setTimeout(fetchCurrentTrack, 500);
   } catch (err) {
     console.error(`Player control failed (${action}):`, err);
   }
@@ -479,10 +479,10 @@ function toggleShuffle() {
 
 function toggleRepeat() {
   // Cycle: off → context (playlist) → track (single song) → off
-  const cur  = btnRepeat.dataset.state || 'off';
+  const cur = btnRepeat.dataset.state || 'off';
   const next = cur === 'off' ? 'context' : cur === 'context' ? 'track' : 'off';
   btnRepeat.dataset.state = next;
-  const num  = document.getElementById('repeat-track-num');
+  const num = document.getElementById('repeat-track-num');
   if (next === 'off') {
     btnRepeat.classList.remove('active');
     if (num) num.style.display = 'none';
@@ -527,10 +527,10 @@ function stopAll() {
 }
 
 /* ── Share Card Generator ────────────────────────────────────────── */
-const shareModal      = $('share-modal');
-const shareCanvas     = $('share-canvas');
+const shareModal = $('share-modal');
+const shareCanvas = $('share-canvas');
 const shareModalClose = $('share-modal-close');
-const btnShareCard    = $('btn-share-card');
+const btnShareCard = $('btn-share-card');
 const btnDownloadCard = $('btn-download-card');
 const shareLyricPicker = $('share-lyric-picker');
 let _shareCardIdx = 0; // currently selected lyric index for the card
@@ -595,9 +595,9 @@ async function generateShareCard(idx) {
   cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d');
 
-  const prevLine = idx > 0                            ? state.syncedLyrics[idx-1].text : '';
-  const curLine  =                                      state.syncedLyrics[idx].text;
-  const nextLine = idx < state.syncedLyrics.length - 1 ? state.syncedLyrics[idx+1].text : '';
+  const prevLine = idx > 0 ? state.syncedLyrics[idx - 1].text : '';
+  const curLine = state.syncedLyrics[idx].text;
+  const nextLine = idx < state.syncedLyrics.length - 1 ? state.syncedLyrics[idx + 1].text : '';
 
   /* ── Rounded clip ───────────────────────────────────────────── */
   ctx.beginPath();
@@ -621,7 +621,7 @@ async function generateShareCard(idx) {
     const sc = Math.max(W / coverImg.width, H / coverImg.height) * 2;
     const dw = coverImg.width * sc, dh = coverImg.height * sc;
     tc.filter = 'blur(120px) saturate(200%) brightness(0.55)';
-    tc.drawImage(coverImg, (W-dw)/2, (H-dh)/2, dw, dh);
+    tc.drawImage(coverImg, (W - dw) / 2, (H - dh) / 2, dw, dh);
     tc.filter = 'none';
     ctx.drawImage(tmp, 0, 0);
   } else {
@@ -630,9 +630,9 @@ async function generateShareCard(idx) {
 
   /* ── 2. Dramatic diagonal gradient overlay ──────────────────── */
   const g1 = ctx.createLinearGradient(0, H, W, 0);
-  g1.addColorStop(0,   'rgba(4,8,16,0.85)');
+  g1.addColorStop(0, 'rgba(4,8,16,0.85)');
   g1.addColorStop(0.5, 'rgba(4,8,16,0.30)');
-  g1.addColorStop(1,   'rgba(4,8,16,0.55)');
+  g1.addColorStop(1, 'rgba(4,8,16,0.55)');
   ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
 
   /* ── 3. Decorative giant quotation mark ─────────────────────── */
@@ -647,10 +647,10 @@ async function generateShareCard(idx) {
   /* ── 4. Left green stripe ───────────────────────────────────── */
   const stripeW = 6;
   const stripeGrad = ctx.createLinearGradient(0, 120, 0, H - 160);
-  stripeGrad.addColorStop(0,   'rgba(29,185,84,0)');
+  stripeGrad.addColorStop(0, 'rgba(29,185,84,0)');
   stripeGrad.addColorStop(0.2, 'rgba(29,185,84,0.9)');
   stripeGrad.addColorStop(0.8, 'rgba(29,185,84,0.9)');
-  stripeGrad.addColorStop(1,   'rgba(29,185,84,0)');
+  stripeGrad.addColorStop(1, 'rgba(29,185,84,0)');
   ctx.fillStyle = stripeGrad;
   ctx.fillRect(52, 120, stripeW, H - 280);
 
@@ -699,9 +699,9 @@ async function generateShareCard(idx) {
     ctx.beginPath();
     ctx.arc(cx, cy, cr, 0, Math.PI * 2);
     ctx.clip();
-    const s3 = Math.max((cr*2) / coverImg.width, (cr*2) / coverImg.height);
+    const s3 = Math.max((cr * 2) / coverImg.width, (cr * 2) / coverImg.height);
     const dw3 = coverImg.width * s3, dh3 = coverImg.height * s3;
-    ctx.drawImage(coverImg, cx-cr + (cr*2-dw3)/2, cy-cr + (cr*2-dh3)/2, dw3, dh3);
+    ctx.drawImage(coverImg, cx - cr + (cr * 2 - dw3) / 2, cy - cr + (cr * 2 - dh3) / 2, dw3, dh3);
     ctx.restore();
   }
 
@@ -718,7 +718,7 @@ async function generateShareCard(idx) {
   }
 
   /* ── 9. Current lyric — auto-shrink until text fits ─────────── */
-  const barY   = H - 120;
+  const barY = H - 120;
   const availH = (barY - 80) - lyricStartY; // space before bottom bar
   const MIN_FZ = 44, STEP = 8;
   let fz = curLine.length > 28 ? 66 : curLine.length > 18 ? 78 : 92;
@@ -741,15 +741,15 @@ async function generateShareCard(idx) {
   // Shrink font until it fits or floor is hit
   while (fz > MIN_FZ && linesNeeded(fz) * (fz * 1.3) > availH) fz -= STEP;
 
-  const lh       = fz * 1.3;
+  const lh = fz * 1.3;
   const maxLines = Math.max(1, Math.floor(availH / lh));
 
-  ctx.font          = `800 ${fz}px "Inter", sans-serif`;
-  ctx.fillStyle     = '#ffffff';
-  ctx.textAlign     = 'left';
-  ctx.textBaseline  = 'alphabetic';
-  ctx.shadowColor   = 'rgba(29,185,84,0.55)';
-  ctx.shadowBlur    = 40;
+  ctx.font = `800 ${fz}px "Inter", sans-serif`;
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.shadowColor = 'rgba(29,185,84,0.55)';
+  ctx.shadowBlur = 40;
   const endY = wrapText(ctx, curLine, lyricX, lyricStartY, lyricMaxW, lh, maxLines);
   ctx.shadowBlur = 0;
 
@@ -790,7 +790,7 @@ async function generateShareCard(idx) {
     ctx.roundRect(thX, thY, thS, thS, 8);
     ctx.clip();
     const s4 = Math.max(thS / coverImg.width, thS / coverImg.height);
-    ctx.drawImage(coverImg, thX+(thS-coverImg.width*s4)/2, thY+(thS-coverImg.height*s4)/2, coverImg.width*s4, coverImg.height*s4);
+    ctx.drawImage(coverImg, thX + (thS - coverImg.width * s4) / 2, thY + (thS - coverImg.height * s4) / 2, coverImg.width * s4, coverImg.height * s4);
     ctx.restore();
   }
 
@@ -821,7 +821,7 @@ function closeShareModal() { shareModal.classList.add('hidden'); }
 
 function downloadCard() {
   const link = document.createElement('a');
-  const name = (trackNameEl.textContent || 'lyrics').slice(0,20).replace(/\s+/g,'-');
+  const name = (trackNameEl.textContent || 'lyrics').slice(0, 20).replace(/\s+/g, '-');
   link.download = `lyrica-${name}.png`;
   link.href = shareCanvas.toDataURL('image/png');
   link.click();
@@ -832,7 +832,7 @@ function downloadCard() {
 async function init() {
   const cfg = await checkConfigStatus();
   if (cfg.redirect_uri && cfgRedirectUri) cfgRedirectUri.value = cfg.redirect_uri;
-  
+
   if (!cfg.is_configured) {
     showLogin();
     loginContent.classList.add('hidden');
@@ -841,12 +841,12 @@ async function init() {
   } else {
     const auth = await checkAuthStatus();
     if (auth.logged_in) showPlayer(auth);
-    else                showLogin();
+    else showLogin();
   }
 
   const logoutBtn = $('logout-btn');
   if (logoutBtn) logoutBtn.addEventListener('click', stopAll);
-  
+
   // Config Events
   if (btnOpenConfig) btnOpenConfig.addEventListener('click', () => {
     loginContent.classList.add('hidden');
@@ -861,13 +861,13 @@ async function init() {
 
   // Player Control Events
   if (btnPlayPause) btnPlayPause.addEventListener('click', togglePlayPause);
-  if (btnNext)      btnNext.addEventListener('click', () => controlPlayer('next'));
-  if (btnPrev)      btnPrev.addEventListener('click', () => controlPlayer('previous'));
-  if (btnShuffle)   btnShuffle.addEventListener('click', toggleShuffle);
-  if (btnRepeat)    btnRepeat.addEventListener('click', toggleRepeat);
+  if (btnNext) btnNext.addEventListener('click', () => controlPlayer('next'));
+  if (btnPrev) btnPrev.addEventListener('click', () => controlPlayer('previous'));
+  if (btnShuffle) btnShuffle.addEventListener('click', toggleShuffle);
+  if (btnRepeat) btnRepeat.addEventListener('click', toggleRepeat);
 
   // Share card events
-  if (btnShareCard)    btnShareCard.addEventListener('click', openShareCard);
+  if (btnShareCard) btnShareCard.addEventListener('click', openShareCard);
   if (shareModalClose) shareModalClose.addEventListener('click', closeShareModal);
   if (btnDownloadCard) btnDownloadCard.addEventListener('click', downloadCard);
   // Close on backdrop click

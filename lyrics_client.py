@@ -15,6 +15,7 @@ import base64
 import logging
 import re
 import time
+import difflib
 from typing import Dict, Optional, Tuple
 
 import httpx
@@ -131,11 +132,53 @@ async def search_lyrics_raw(query: str) -> Optional[dict]:
 # Fallback Fetchers (Netease & KuGou)
 # ─────────────────────────────────────────────────────────────────────────────
 
-async def search_lyrics_netease(artist: str, track: str) -> Optional[str]:
+def _is_valid_match(query_track: str, result_track: str, target_duration: int = 0, result_duration: int = 0) -> bool:
+    """
+    Prevent wildly incorrect lyrics matching.
+    If Traditional/Simplified Chinese or Pinyin causes a 0.0 text match,
+    we validate using the audio track's duration fingerprint (within 3.5s).
+    """
+    def clean(s: str) -> str:
+        s = re.sub(r'\(.*?\)|\[.*?\]|（.*?）|【.*?】|-.*', '', s)
+        return re.sub(r'[^\w]', '', s).lower()
+        
+    c_query = clean(query_track)
+    c_res = clean(result_track)
+    
+    # 1. Check if completely cleaned out
+    if not c_query or not c_res:
+        return True
+        
+    # 2. Check difflib ratio
+    ratio = difflib.SequenceMatcher(None, c_query, c_res).ratio()
+    
+    # Dynamic ratio threshold to prevent short titles (2 chars) from easily passing 
+    # when matched against 6+ char strings.
+    threshold = 0.35
+    if len(c_query) <= 2:
+        threshold = 0.8
+    elif len(c_query) <= 4:
+        threshold = 0.5
+        
+    if ratio >= threshold:
+        return True
+        
+    # 3. Fallback: Duration Fingerprinting
+    # If text failed but durations match tightly, it's highly likely the same song.
+    if target_duration > 0 and result_duration > 0:
+        if abs(target_duration - result_duration) <= 3500:
+            # ONLY bypass text check if the title lengths are EXACTLY identical.
+            # This perfectly isolates Traditional vs Simplified matches (e.g. 無雙(2) -> 无双(2))
+            # while blocking random Pinyin hallucination songs (e.g. 木目心(3) -> 不經意間(4))
+            if len(c_query) == len(c_res):
+                return True
+            
+    return False
+
+async def search_lyrics_netease(artist: str, track: str, duration_ms: int = 0) -> Optional[str]:
     """Fallback 1: Search Netease Cloud Music (163) for LRC lyrics."""
-    query = f"{artist} {track}"
+    queries = [f"{artist} {track}", track]
     search_url = "https://music.163.com/api/search/get/web"
-    params = {"s": query, "type": 1, "limit": 5}
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Referer": "https://music.163.com/"
@@ -143,99 +186,112 @@ async def search_lyrics_netease(artist: str, track: str) -> Optional[str]:
     
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            res = await client.get(search_url, params=params, headers=headers)
-            data = res.json()
-            
-            songs = data.get("result", {}).get("songs", [])
-            if not songs:
-                return None
+            for query in queries:
+                params = {"s": query, "type": 1, "limit": 5}
+                res = await client.get(search_url, params=params, headers=headers)
+                data = res.json()
                 
-            for song in songs:
-                song_id = song["id"]
-                lyric_url = "https://music.163.com/api/song/lyric"
-                l_params = {"id": song_id, "lv": 1, "tv": -1, "kv": 1}
-                l_res = await client.get(lyric_url, params=l_params, headers=headers)
-                l_data = l_res.json()
-                
-                lrc = l_data.get("lrc", {}).get("lyric", "")
-                if lrc:
-                    return lrc
+                songs = data.get("result", {}).get("songs", [])
+                if not songs:
+                    continue
+                    
+                for song in songs:
+                    song_name = song.get("name", "")
+                    song_dur = song.get("duration", 0)
+                    
+                    if not _is_valid_match(track, song_name, duration_ms, song_dur):
+                        continue
+
+                    song_id = song["id"]
+                    lyric_url = "https://music.163.com/api/song/lyric"
+                    l_params = {"id": song_id, "lv": 1, "tv": -1, "kv": 1}
+                    l_res = await client.get(lyric_url, params=l_params, headers=headers)
+                    l_data = l_res.json()
+                    
+                    lrc = l_data.get("lrc", {}).get("lyric", "")
+                    if lrc:
+                        return lrc
     except Exception as e:
-        logger.warning("Netease fallback error for '%s': %s", query, e)
+        logger.warning("Netease fallback error for '%s - %s': %s", artist, track, e)
         
     return None
 
-async def search_lyrics_kugou(artist: str, track: str) -> Optional[str]:
+async def search_lyrics_kugou(artist: str, track: str, duration_ms: int = 0) -> Optional[str]:
     """
     Search KuGou for raw LRC text. Works well for tracks not on LRCLIB.
     """
-    query = f"{artist} {track}"
+    queries = [f"{artist} {track}", track]
     search_url = "http://songsearch.kugou.com/song_search_v2"
-    params = {
-        "keyword": query,
-        "page": 1,
-        "pagesize": 1,
-        "platform": "WebFilter"
-    }
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
     
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            # 1. Search for the song
-            res = await client.get(search_url, params=params, headers=headers)
-            data = res.json()
-            songs = data.get("data", {}).get("lists", [])
-            if not songs:
-                return None
-            
-            song = songs[0]
-            filehash = song.get("FileHash")
-            artist_name = song.get("SingerName")
-            song_name = song.get("SongName")
-            duration = song.get("Duration", 0) * 1000
-            album_id = song.get("ID")
-            
-            # 2. Search for the lyric accesskey
-            l_search_url = "http://krcs.kugou.com/search"
-            l_params = {
-                "ver": 1,
-                "man": "yes",
-                "client": "mobi",
-                "keyword": f"{artist_name} - {song_name}",
-                "duration": duration,
-                "hash": filehash,
-                "album_audio_id": album_id
-            }
-            l_res = await client.get(l_search_url, params=l_params, headers=headers)
-            l_data = l_res.json()
-            candidates = l_data.get("candidates", [])
-            if not candidates:
-                return None
-                
-            accesskey = candidates[0].get("accesskey")
-            lrc_id = candidates[0].get("id")
-            
-            # 3. Download and decode base64 LRC
-            dl_url = "http://lyrics.kugou.com/download"
-            dl_params = {
-                "ver": 1,
-                "client": "pc",
-                "id": lrc_id,
-                "accesskey": accesskey,
-                "fmt": "lrc",
-                "charset": "utf8"
-            }
-            dl_res = await client.get(dl_url, params=dl_params, headers=headers)
-            dl_data = dl_res.json()
-            
-            lrc_b64 = dl_data.get("content", "")
-            if lrc_b64:
-                return base64.b64decode(lrc_b64).decode('utf-8')
-                
+            for query in queries:
+                params = {
+                    "keyword": query,
+                    "page": 1,
+                    "pagesize": 3,
+                    "platform": "WebFilter"
+                }
+                # 1. Search for the song
+                res = await client.get(search_url, params=params, headers=headers)
+                data = res.json()
+                songs = data.get("data", {}).get("lists", [])
+                if not songs:
+                    continue
+                for song in songs:
+                    song_name = song.get("SongName", "")
+                    song_dur = song.get("Duration", 0) * 1000
+                    
+                    if not _is_valid_match(track, song_name, duration_ms, song_dur):
+                        continue
+                        
+                    filehash = song.get("FileHash")
+                    artist_name = song.get("SingerName")
+                    duration = song.get("Duration", 0) * 1000
+                    album_id = song.get("ID")
+                    
+                    # 2. Search for the lyric accesskey
+                    l_search_url = "http://krcs.kugou.com/search"
+                    l_params = {
+                        "ver": 1,
+                        "man": "yes",
+                        "client": "mobi",
+                        "keyword": f"{artist_name} - {song_name}",
+                        "duration": duration,
+                        "hash": filehash,
+                        "album_audio_id": album_id
+                    }
+                    l_res = await client.get(l_search_url, params=l_params, headers=headers)
+                    l_data = l_res.json()
+                    candidates = l_data.get("candidates", [])
+                    if not candidates:
+                        continue
+                        
+                    accesskey = candidates[0].get("accesskey")
+                    lrc_id = candidates[0].get("id")
+                    
+                    # 3. Download and decode base64 LRC
+                    dl_url = "http://lyrics.kugou.com/download"
+                    dl_params = {
+                        "ver": 1,
+                        "client": "pc",
+                        "id": lrc_id,
+                        "accesskey": accesskey,
+                        "fmt": "lrc",
+                        "charset": "utf8"
+                    }
+                    dl_res = await client.get(dl_url, params=dl_params, headers=headers)
+                    dl_data = dl_res.json()
+                    
+                    lrc_b64 = dl_data.get("content", "")
+                    if lrc_b64:
+                        return base64.b64decode(lrc_b64).decode('utf-8')
+                    
     except Exception as e:
-        logger.warning("KuGou fallback error for '%s': %s", query, e)
+        logger.warning("KuGou fallback error for '%s - %s': %s", artist, track, e)
         
     return None
 
@@ -243,7 +299,7 @@ async def search_lyrics_kugou(artist: str, track: str) -> Optional[str]:
 # Public interface
 # ─────────────────────────────────────────────────────────────────────────────
 
-async def get_lyrics(artist: str, track: str) -> LyricsResponse:
+async def get_lyrics(artist: str, track: str, duration_ms: int = 0) -> LyricsResponse:
     """
     Fetch and parse lyrics for a given artist + track name.
 
@@ -277,15 +333,17 @@ async def get_lyrics(artist: str, track: str) -> LyricsResponse:
     if raw:
         synced_raw = raw.get("syncedLyrics") or ""
         plain_raw = raw.get("plainLyrics") or None
-    else:
+        
+    # If LRCLIB fails to find the track entirely, OR if it finds an entry but it has no lyrics, fallback!
+    if not synced_raw and not plain_raw:
         logger.info("Falling back to Netease Cloud Music for '%s' – '%s'", artist, track)
-        netease_lrc = await search_lyrics_netease(artist, track)
+        netease_lrc = await search_lyrics_netease(artist, track, duration_ms)
         if netease_lrc:
             synced_raw = netease_lrc
             source = "netease"
         else:
             logger.info("Falling back to KuGou for '%s' – '%s'", artist, track)
-            kugou_lrc = await search_lyrics_kugou(artist, track)
+            kugou_lrc = await search_lyrics_kugou(artist, track, duration_ms)
             if kugou_lrc:
                 synced_raw = kugou_lrc
                 source = "kugou"
