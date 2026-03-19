@@ -148,7 +148,7 @@ function renderPlain(text) {
 function renderNoLyrics() {
   lyricsList.innerHTML = '';
   lyricsIdle.style.display = 'flex';
-  lyricsIdle.innerHTML = `<div class="idle-icon">📝</div><p>未找到该歌曲的歌词</p>`;
+  lyricsIdle.innerHTML = `<div class="idle-icon">📝</div><p data-i18n="no_lyrics">${window.i18n ? window.i18n.t('no_lyrics') : 'Lyrics not found'}</p>`;
 }
 
 /* ── Scroll: centre active line in container ─────────────────────── */
@@ -161,7 +161,8 @@ let _hintEl = null;
 function _ensureHint() {
   if (_hintEl) return;
   _hintEl = document.createElement('div');
-  _hintEl.textContent = '手动浏览中，2 秒后自动回到当前歌词';
+  _hintEl.setAttribute('data-i18n', 'msg_scroll_hint');
+  _hintEl.textContent = window.i18n ? window.i18n.t('msg_scroll_hint') : 'Manual scroll — auto-scroll resumes in 2s';
   _hintEl.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%)'
     + ';background:rgba(0,0,0,.65);color:#fff;font-size:.78rem;padding:6px 16px'
     + ';border-radius:100px;pointer-events:none;opacity:0;transition:opacity .3s'
@@ -318,7 +319,9 @@ function updateTrack(data) {
   if (trackChanged || lyricsAreMissing) {
     state.syncedLyrics = lyrics.synced || [];
     state.plainLyrics  = lyrics.plain   || null;
-    lyricsSource.textContent = lyrics.has_synced ? '同步歌词' : '文本歌词';
+    const srcKey = lyrics.has_synced ? 'lrc_synced' : 'lrc_plain';
+    lyricsSource.setAttribute('data-i18n', srcKey);
+    lyricsSource.textContent = window.i18n ? window.i18n.t(srcKey) : (lyrics.has_synced ? 'Synced' : 'Plain');
 
     if (lyrics.has_synced && lyrics.synced.length) {
       renderSynced(lyrics.synced);
@@ -398,12 +401,14 @@ async function saveConfig() {
     redirect_uri: cfgRedirectUri.value.trim(),
   };
   if (!payload.client_id || !payload.client_secret) {
-    alert("Please enter Client ID and Secret");
+    alert(window.i18n ? window.i18n.t('msg_req_client_id') : 'Please enter Client ID and Secret');
     return;
   }
   
   const oldTxt = btnSaveConfig.textContent;
-  btnSaveConfig.textContent = "Saving...";
+  const oldI18n = btnSaveConfig.getAttribute('data-i18n');
+  btnSaveConfig.setAttribute('data-i18n', 'msg_saving');
+  btnSaveConfig.textContent = window.i18n ? window.i18n.t('msg_saving') : 'Saving...';
   try {
     const res = await fetch(`${API_BASE}/api/config/setup`, {
       method: 'POST',
@@ -417,7 +422,9 @@ async function saveConfig() {
     }
   } catch (err) {
     console.error("Config save failed:", err);
-    alert("Failed to save configuration.");
+    alert(window.i18n ? window.i18n.t('msg_save_fail') : 'Failed to save configuration.');
+    if (oldI18n) btnSaveConfig.setAttribute('data-i18n', oldI18n);
+    else btnSaveConfig.removeAttribute('data-i18n');
     btnSaveConfig.textContent = oldTxt;
   }
 }
@@ -866,7 +873,14 @@ async function init() {
   // Close on backdrop click
   const backdrop = shareModal?.querySelector('.share-modal-backdrop');
   if (backdrop) backdrop.addEventListener('click', closeShareModal);
+  // Language toggle event
+  const langToggle = $('lang-toggle-btn');
+  if (langToggle) langToggle.addEventListener('click', () => window.i18n?.toggle());
+
+  // Apply translations on first paint
+  window.i18n?.applyTranslations();
 }
+
 
 document.addEventListener('DOMContentLoaded', init);
 
