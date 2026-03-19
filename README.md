@@ -44,6 +44,7 @@ graph TD
         Spot[Spotify Service Wrapper]
         
         subgraph Lyrics Engine
+            LRC
         end
         
         Auth --- API
