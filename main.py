@@ -290,6 +290,7 @@ from typing import Optional
 
 class PlaybackControlParams(BaseModel):
     state: Optional[str | bool] = None
+    position_ms: Optional[int] = None
 
 @app.post(
     "/api/player/{action}",
@@ -308,13 +309,16 @@ def control_player(
     For 'repeat' state should be one of 'track', 'context', 'off'.
     Must have active Spotify Premium device.
     """
-    valid_actions = {"play", "pause", "next", "previous", "shuffle", "repeat"}
+    valid_actions = {"play", "pause", "next", "previous", "shuffle", "repeat", "seek"}
     if action not in valid_actions:
         raise HTTPException(status_code=400, detail=f"Invalid action. Allowed: {valid_actions}")
 
     kwargs = {}
-    if params is not None and params.state is not None:
-        kwargs["state"] = params.state
+    if params is not None:
+        if params.state is not None:
+            kwargs["state"] = params.state
+        if params.position_ms is not None:
+            kwargs["position_ms"] = params.position_ms
 
     spotify_client.control_playback(sp, action, **kwargs)
     return {"status": "success", "action": action}

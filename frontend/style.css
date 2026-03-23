@@ -564,30 +564,69 @@ body {
 
 .progress-bar-wrap {
   width: 100%;
+  height: 20px; /* Invisible expanded hover hitbox for user interaction */
+  display: flex;
+  align-items: center;
+  cursor: pointer;
 }
 
 .progress-bar-bg {
   height: 4px;
-  background: rgba(255, 255, 255, 0.1);
+  width: 100%;
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 4px;
-  overflow: hidden;
+  position: relative;
+  transition: height 0.2s ease, background 0.2s;
+}
+
+.progress-bar-wrap:hover .progress-bar-bg {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .progress-bar-fill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, var(--accent), #69ff8e);
+  background: var(--accent);
   border-radius: 4px;
-  transition: width .8s linear;
+  position: absolute;
+  left: 0;
+  top: 0;
+  transition: width 1s linear, background-color 0.2s ease;
+}
+
+.progress-bar-wrap:hover .progress-bar-fill {
+  background: #1ed760;
+}
+
+/* Glowing Scrubber Thumb */
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%) scale(0);
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(0,0,0,0.6);
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.progress-bar-wrap:hover .progress-bar-fill::after {
+  transform: translateY(-50%) scale(1);
 }
 
 .progress-times {
   display: flex;
   justify-content: space-between;
-  margin-top: 8px;
-  font-size: .75rem;
+  margin-top: 2px;
+  font-size: .8rem;
+  font-weight: 600;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
 }
 
 

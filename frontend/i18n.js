@@ -45,6 +45,16 @@ const _translations = {
     np_title:         'Nothing is playing right now',
     np_hint:          'Open Spotify and start playing',
 
+    /* ── Player controls ──────── */
+    btn_shuffle_title: 'Shuffle',
+    btn_prev_title:    'Previous',
+    btn_play_pause_title: 'Play/Pause',
+    btn_next_title:    'Next',
+    btn_repeat_title:  'Repeat',
+    btn_open_config_title: 'Configure API',
+    btn_lang_toggle_title: 'Switch Language',
+    cfg_client_id_placeholder: 'e.g. 1a2b3c4d5e...',
+
     /* ── Share modal ─────────── */
     share_title:      'Share Lyrics Card',
     share_btn_dl:     'Download Card',
@@ -86,6 +96,16 @@ const _translations = {
     /* ── Nothing-playing overlay */
     np_title:         '当前没有音乐播放',
     np_hint:          '打开 Spotify 开始播放吧',
+
+    /* ── Player controls ──────── */
+    btn_shuffle_title: '随机播放',
+    btn_prev_title:    '上一首',
+    btn_play_pause_title: '播放 / 暂停',
+    btn_next_title:    '下一首',
+    btn_repeat_title:  '循环模式',
+    btn_open_config_title: '配置 API',
+    btn_lang_toggle_title: '切换语言',
+    cfg_client_id_placeholder: '例如: 1a2b3c4d5e...',
 
     /* ── Share modal ─────────── */
     share_title:      '分享歌词卡片',
@@ -130,15 +150,20 @@ function applyTranslations() {
     }
   });
 
-  // 2. Update tooltip attributes
-  const shareBtn = document.getElementById('btn-share-card');
-  if (shareBtn) shareBtn.title = t('btn_share_tooltip');
+  // 2. Update placeholders and titles
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    el.title = t(el.getAttribute('data-i18n-title'));
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+  });
 
   // 3. Update the toggle button label: show the OTHER language as the label
   const toggleBtn = document.getElementById('lang-toggle-btn');
   if (toggleBtn) {
     toggleBtn.textContent = _lang === 'zh' ? 'EN' : '中';
-    toggleBtn.setAttribute('aria-label', _lang === 'zh' ? 'Switch to English' : '切换为中文');
+    toggleBtn.title = t('btn_lang_toggle_title');
+    toggleBtn.setAttribute('aria-label', toggleBtn.title);
   }
 
   // 4. Update <html lang=""> attribute for accessibility

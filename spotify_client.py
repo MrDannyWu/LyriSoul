@@ -262,6 +262,10 @@ def control_playback(sp: spotipy.Spotify, action: str, **kwargs):
         elif action == "repeat":
             state = kwargs.get("state", "context")
             sp.repeat(state)
+        elif action == "seek":
+            if "position_ms" not in kwargs:
+                raise ValueError("Missing position_ms for seek action")
+            sp.seek_track(int(kwargs["position_ms"]))
         else:
             raise ValueError(f"Unknown playback action: {action}")
     except spotipy.SpotifyException as e:

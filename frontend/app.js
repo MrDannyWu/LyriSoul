@@ -25,6 +25,7 @@ let state = {
   activeLineIdx: -1,
   pollTimer: null,
   rafId: null,
+  isDragging: false,
 };
 // Debug: print key state every 8s so you can open DevTools Console to diagnose issues
 setInterval(() => {
@@ -104,7 +105,7 @@ function lerp(a, b, t) { return a + (b - a) * t; }
 
 /* ── Real-time progress estimate ────────────────────────────────── */
 function estimateProgressMs() {
-  if (!state.isPlaying) return state.progressMs;
+  if (!state.isPlaying || state.isDragging) return state.progressMs;
   return state.progressMs + (performance.now() - state._fetchPerfMark);
 }
 
@@ -242,7 +243,7 @@ function smoothScrollTick() {
 function syncLoop() {
   // Progress bar & time (smooth, every frame)
   const progressMs = estimateProgressMs();
-  if (state.durationMs > 0) {
+  if (state.durationMs > 0 && !state.isDragging) {
     const pct = clamp(progressMs / state.durationMs * 100, 0, 100);
     progressBarFill.style.width = pct + '%';
     timeCurrent.textContent = formatTime(progressMs);
@@ -927,6 +928,51 @@ async function init() {
   if (btnPrev) btnPrev.addEventListener('click', () => controlPlayer('previous'));
   if (btnShuffle) btnShuffle.addEventListener('click', toggleShuffle);
   if (btnRepeat) btnRepeat.addEventListener('click', toggleRepeat);
+
+  // Progress Bar Scrubber
+  const pbWrap = document.querySelector('.progress-bar-wrap');
+  if (pbWrap) {
+    const updateScrub = (e) => {
+      if (!state.durationMs) return;
+      const rect = pbWrap.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const pct = Math.max(0, Math.min(1, x / rect.width));
+      
+      const pb = document.getElementById('progress-bar');
+      if (pb) {
+        pb.style.transition = 'none'; // Snap instantly to mouse
+        pb.style.width = (pct * 100) + '%';
+      }
+      
+      const targetMs = Math.floor(pct * state.durationMs);
+      const timeCurrent = document.getElementById('time-current');
+      if (timeCurrent) timeCurrent.textContent = formatTime(targetMs);
+      return targetMs;
+    };
+
+    pbWrap.addEventListener('mousedown', (e) => {
+      state.isDragging = true;
+      updateScrub(e);
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (state.isDragging) updateScrub(e);
+    });
+    document.addEventListener('mouseup', (e) => {
+      if (state.isDragging) {
+        state.isDragging = false;
+        
+        const pb = document.getElementById('progress-bar');
+        if (pb) pb.style.transition = 'width 1s linear, background-color 0.2s ease'; // Restore CSS smoothing
+        
+        const targetMs = updateScrub(e);
+        if (targetMs !== undefined) {
+          controlPlayer('seek', { position_ms: targetMs });
+          state.progressMs = targetMs;
+          state._fetchPerfMark = performance.now();
+        }
+      }
+    });
+  }
 
   // Share card events
   if (btnShareCard) btnShareCard.addEventListener('click', openShareCard);
