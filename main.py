@@ -33,6 +33,7 @@ from models import (
     RecentTracksResponse,
     SetupRequestModel,
     SetupStatusResponse,
+    TrackModel,
 )
 from dotenv import set_key
 
@@ -93,7 +94,12 @@ app.mount("/static", StaticFiles(directory=_frontend_dir), name="static")
 @app.get("/", include_in_schema=False)
 def serve_frontend():
     """Serve the frontend SPA from the root URL."""
-    return FileResponse(os.path.join(_frontend_dir, "index.html"))
+    response = FileResponse(os.path.join(_frontend_dir, "index.html"))
+    # Disable cache to ensure users get the newest Zero-Config HTML/JS
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Dependency: require authenticated Spotify client
@@ -112,35 +118,33 @@ def require_spotify(request: Request):
 def health():
     return {"status": "ok", "version": app.version}
 
-
 # ─────────────────────────────────────────────────────────────────────────────
-# /api/config — Dynamic Setup
+# /api/config — Dynamic Setup (BYOK)
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.get("/api/config/status", response_model=SetupStatusResponse, tags=["system"])
 def config_status():
-    """Check if the Spotify client credentials are fundamentally set up."""
-    # A generic check: Client ID should be 32 chars long
+    """Check if the user has provided their own Spotify Client ID (BYOK)."""
     is_ready = bool(settings.spotify_client_id and len(settings.spotify_client_id.strip()) >= 32)
     return SetupStatusResponse(is_configured=is_ready, redirect_uri=settings.spotify_redirect_uri)
 
 
 @app.post("/api/config/setup", response_model=SetupStatusResponse, tags=["system"])
 def config_setup(data: SetupRequestModel):
-    """Save Spotify credentials to .env and hot-reload them into memory."""
+    """Save the user's custom Spotify Client ID to .env and hot-reload."""
     env_path = os.path.join(os.path.dirname(__file__), ".env")
     
-    # Write to .env file
+    # Write to .env file (No client secret needed for PKCE!)
     set_key(env_path, "SPOTIFY_CLIENT_ID", data.client_id.strip())
-    set_key(env_path, "SPOTIFY_CLIENT_SECRET", data.client_secret.strip())
     set_key(env_path, "SPOTIFY_REDIRECT_URI", data.redirect_uri.strip())
     
     # Update running config memory
     settings.spotify_client_id = data.client_id.strip()
-    settings.spotify_client_secret = data.client_secret.strip()
     settings.spotify_redirect_uri = data.redirect_uri.strip()
     
     return SetupStatusResponse(is_configured=True, redirect_uri=settings.spotify_redirect_uri)
+
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────

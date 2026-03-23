@@ -38,6 +38,25 @@ setInterval(() => {
   });
 }, 8000);
 
+/* ── Toast Notifications ──────────────────────────────────────────── */
+function showToast(message, type = 'error') {
+  let existing = document.getElementById('lyrica-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'lyrica-toast';
+  toast.className = `toast toast-${type}`;
+  toast.innerText = message;
+  document.body.appendChild(toast);
+
+  requestAnimationFrame(() => toast.classList.add('show'));
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 400);
+  }, 4000);
+}
+
 /* ── DOM refs ───────────────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
 
@@ -46,7 +65,6 @@ const playerScreen = $('player-screen');
 const loginContent = $('login-content');
 const configContent = $('config-content');
 const cfgClientId = $('cfg-client-id');
-const cfgClientSecret = $('cfg-client-secret');
 const cfgRedirectUri = $('cfg-redirect-uri');
 const btnOpenConfig = $('btn-open-config');
 const btnCancelConfig = $('btn-cancel-config');
@@ -396,19 +414,28 @@ async function checkConfigStatus() {
 
 async function saveConfig() {
   const payload = {
-    client_id: cfgClientId.value.trim(),
-    client_secret: cfgClientSecret.value.trim(),
-    redirect_uri: cfgRedirectUri.value.trim(),
+    client_id: cfgClientId?.value.trim() || '',
+    redirect_uri: cfgRedirectUri?.value.trim() || 'http://127.0.0.1:666/callback',
   };
-  if (!payload.client_id || !payload.client_secret) {
-    alert(window.i18n ? window.i18n.t('msg_req_client_id') : 'Please enter Client ID and Secret');
+  
+  if (!payload.client_id) {
+    showToast(window.i18n ? window.i18n.t('msg_req_client_id') : 'Please enter your Spotify Developer Client ID', 'error');
+    return;
+  }
+  
+  // Basic validation for typical Spotify Client ID format (32 hex characters)
+  if (!/^[a-fA-F0-9]{32}$/.test(payload.client_id)) {
+    showToast('错误：无效的 Spotify Client ID！\n这通常是一串由 32 位数字和字母组成的特征码，请确保您没有多复制空格或标点符号。', 'error');
     return;
   }
 
   const oldTxt = btnSaveConfig.textContent;
   const oldI18n = btnSaveConfig.getAttribute('data-i18n');
-  btnSaveConfig.setAttribute('data-i18n', 'msg_saving');
+  if (oldI18n) {
+    btnSaveConfig.setAttribute('data-i18n', 'msg_saving');
+  }
   btnSaveConfig.textContent = window.i18n ? window.i18n.t('msg_saving') : 'Saving...';
+  
   try {
     const res = await fetch(`${API_BASE}/api/config/setup`, {
       method: 'POST',
@@ -417,12 +444,11 @@ async function saveConfig() {
     });
     const data = await res.json();
     if (data.is_configured) {
-      // Configuration applied! Redirect to Spotify Auth
       window.location.href = '/auth/login';
     }
   } catch (err) {
     console.error("Config save failed:", err);
-    alert(window.i18n ? window.i18n.t('msg_save_fail') : 'Failed to save configuration.');
+    showToast(window.i18n ? window.i18n.t('msg_save_fail') : 'Failed to save configuration.', 'error');
     if (oldI18n) btnSaveConfig.setAttribute('data-i18n', oldI18n);
     else btnSaveConfig.removeAttribute('data-i18n');
     btnSaveConfig.textContent = oldTxt;
@@ -841,7 +867,12 @@ async function init() {
   } else {
     const auth = await checkAuthStatus();
     if (auth.logged_in) showPlayer(auth);
-    else showLogin();
+    else {
+      showLogin();
+      // Ensure login panel is visible if configured but not logged in
+      loginContent.classList.remove('hidden');
+      configContent.classList.add('hidden');
+    }
   }
 
   const logoutBtn = $('logout-btn');
@@ -858,6 +889,22 @@ async function init() {
     loginContent.classList.remove('hidden');
   });
   if (btnSaveConfig) btnSaveConfig.addEventListener('click', saveConfig);
+
+  // Intercept Login Button
+  const loginBtn = $('login-btn');
+  if (loginBtn) {
+    loginBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const cfg = await checkConfigStatus();
+      if (!cfg.is_configured) {
+        showToast(window.i18n ? window.i18n.t('msg_req_client_id') : 'Please configure your Spotify Client ID first!', 'error');
+        loginContent.classList.add('hidden');
+        configContent.classList.remove('hidden');
+      } else {
+        window.location.href = '/auth/login';
+      }
+    });
+  }
 
   // Player Control Events
   if (btnPlayPause) btnPlayPause.addEventListener('click', togglePlayPause);

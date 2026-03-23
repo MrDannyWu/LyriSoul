@@ -135,12 +135,9 @@ class SetupStatusResponse(BaseModel):
     is_configured: bool
     redirect_uri: str
 
-
 class SetupRequestModel(BaseModel):
     client_id: str
-    client_secret: str
     redirect_uri: str
-
 
 class AuthStatusResponse(BaseModel):
     logged_in: bool

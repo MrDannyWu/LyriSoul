@@ -52,7 +52,7 @@ const _translations = {
 
     /* ── Dynamic JS strings ──── */
     msg_scroll_hint:  'Manual scroll \u2014 auto-scrolls back in 2s',
-    msg_req_client_id:'Please fill in Client ID and Client Secret',
+    msg_req_client_id:'Please fill in Client ID',
     msg_saving:       'Saving\u2026',
     msg_save_fail:    'Failed to save configuration.',
   },
@@ -94,7 +94,7 @@ const _translations = {
 
     /* ── Dynamic JS strings ──── */
     msg_scroll_hint:  '手动浏览中，2 秒后自动回到当前歌词',
-    msg_req_client_id:'请填写 Client ID 和 Client Secret',
+    msg_req_client_id:'请填写 Client ID',
     msg_saving:       '保存中…',
     msg_save_fail:    '无法保存配置，请稍后再试。',
   }

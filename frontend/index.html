@@ -51,40 +51,35 @@
           </svg>
           <span data-i18n="btn_login_spotify">使用 Spotify 登录</span>
         </a>
-        <p class="login-hint" data-i18n="login_hint">需要 Spotify Premium / Free 账号</p>
-        <button id="btn-open-config" class="btn-icon-tiny" title="Configure Spotify credentials">
-          <span data-i18n="btn_open_config">⚙️ 配置</span>
+        <button id="btn-open-config" class="btn-icon-tiny" title="Configure Spotify Client ID">
+          <span data-i18n="btn_open_config">⚙️ 配置 API</span>
         </button>
       </div>
-
-      <!-- CONFIGURATION VIEW (Hidden by default) -->
+      
+      <!-- CONFIGURATION VIEW (BYOK - Bring Your Own Key) -->
       <div id="config-content" class="hidden">
-        <h2 class="config-title" data-i18n="config_title">App Configuration</h2>
-        <p class="config-sub" data-i18n="config_sub">Please enter your Spotify Developer credentials to connect to the API.</p>
+        <h2 class="config-title" data-i18n="config_title">应用配置 (BYOK)</h2>
+        <p class="config-sub" data-i18n="config_sub_byok" style="font-size: 0.85rem; line-height: 1.4; color: rgba(255,255,255,0.7); margin-bottom: 20px;">
+          Spotify限制开发者接口额度。请前往 <a href="https://developer.spotify.com/dashboard" target="_blank" style="color: #1DB954; text-decoration: underline;">Spotify Developer</a> 免费创建一个App，并获取您专属的 Client ID 以解锁本地听歌权限。不填此项将无法登录。
+        </p>
         
         <div class="form-group">
           <label for="cfg-client-id" data-i18n="lbl_client_id">Client ID</label>
-          <input type="text" id="cfg-client-id" placeholder="e.g. 1a2b3c4d5e..." autocomplete="off">
+          <input type="text" id="cfg-client-id" placeholder="例如: 1a2b3c4d5e..." autocomplete="off">
         </div>
         
-        <div class="form-group">
-          <label for="cfg-client-secret" data-i18n="lbl_client_secret">Client Secret</label>
-          <input type="password" id="cfg-client-secret" placeholder="e.g. 5e4d3c2b1a..." autocomplete="off">
-        </div>
-        
-        <div class="form-group">
+        <div class="form-group" style="display: none;">
           <label for="cfg-redirect-uri" data-i18n="lbl_redirect_uri">Redirect URI</label>
           <input type="text" id="cfg-redirect-uri" value="http://127.0.0.1:666/callback">
         </div>
 
         <div class="config-actions">
-          <button id="btn-cancel-config" class="btn-cancel" data-i18n="btn_cancel">取消</button>
-          <button id="btn-save-config" class="btn-save" data-i18n="btn_save_login">保存并登录</button>
+          <button id="btn-cancel-config" class="btn-cancel" data-i18n="btn_cancel">返回</button>
+          <button id="btn-save-config" class="btn-save" data-i18n="btn_save_login">保存 API 密钥</button>
         </div>
       </div>
     </div>
   </div>
-
   <!-- ── Player Screen ────────────────────────────────────── -->
   <div id="player-screen" class="screen">
 

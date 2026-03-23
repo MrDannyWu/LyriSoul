@@ -17,7 +17,7 @@ from typing import Optional
 import spotipy
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from spotipy.oauth2 import SpotifyOAuth
+from spotipy.oauth2 import SpotifyPKCE
 
 from config import settings
 from models import AuthStatusResponse
@@ -29,11 +29,10 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _get_oauth_manager(state: Optional[str] = None) -> SpotifyOAuth:
-    """Create a fresh SpotifyOAuth instance (stateless helper)."""
-    return SpotifyOAuth(
+def _get_oauth_manager(state: Optional[str] = None) -> SpotifyPKCE:
+    """Create a fresh SpotifyPKCE instance (stateless helper)."""
+    return SpotifyPKCE(
         client_id=settings.spotify_client_id,
-        client_secret=settings.spotify_client_secret,
         redirect_uri=settings.spotify_redirect_uri,
         scope=settings.spotify_scopes,
         state=state,
@@ -60,6 +59,8 @@ def get_spotify_client(request: Request) -> spotipy.Spotify:
     oauth = _get_oauth_manager()
     if oauth.is_token_expired(token_info):
         try:
+            # Note: SpotifyPKCE.refresh_access_token returns a dict directly,
+            # unlike get_access_token!
             token_info = oauth.refresh_access_token(token_info["refresh_token"])
             request.session["token_info"] = token_info
             logger.info("Token refreshed for session")
@@ -84,8 +85,17 @@ def login(request: Request):
     Generate a Spotify authorisation URL and redirect the user to it.
     After authorising, Spotify redirects back to /auth/callback.
     """
+    if not settings.spotify_client_id or len(settings.spotify_client_id.strip()) < 32:
+        logger.warning("Attempted to login without a valid Client ID. Redirecting to frontend config.")
+        return RedirectResponse(url="/")
+
     oauth = _get_oauth_manager()
     auth_url = oauth.get_authorize_url()
+    
+    # Store the dynamically generated code_verifier in the user's secure session.
+    # Without this, the stateless oauth object loses the verifier across the redirect!
+    request.session["pkce_verifier"] = oauth.code_verifier
+    
     logger.info("Redirecting to Spotify auth: %s", auth_url)
     return RedirectResponse(url=auth_url)
 
@@ -105,8 +115,26 @@ def callback(request: Request, code: Optional[str] = None, error: Optional[str] 
         raise HTTPException(status_code=400, detail="Missing authorization code")
 
     oauth = _get_oauth_manager()
+    
+    # Restore the PKCE code_verifier from the session so Spotify can validate the code
+    verifier = request.session.pop("pkce_verifier", None)
+    if not verifier:
+        logger.error("Missing PKCE code_verifier in session")
+        raise HTTPException(status_code=400, detail="Session expired or invalid PKCE request. Please try logging in again.")
+    oauth.code_verifier = verifier
+    
+    # Critical: Spotipy's get_access_token() checks BOTH code_verifier AND code_challenge.
+    # If either is None, it silently NUKES code_verifier by generating new random ones!
+    # We must fake a code_challenge here to bypass this malicious overwrite.
+    oauth.code_challenge = "RESTORED_BYPASS_NOOP"
+
     try:
-        token_info = oauth.get_access_token(code, as_dict=True, check_cache=False)
+        # SpotifyPKCE gets the token and drops the details. We must fetch the 
+        # full dict (incl. refresh_token) out of the ephemeral MemoryCacheHandler.
+        oauth.get_access_token(code, check_cache=False)
+        token_info = oauth.cache_handler.get_cached_token()
+        if not token_info:
+            raise Exception("No cached token found after exchange")
     except Exception as e:
         logger.error("Token exchange failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to exchange authorization code")

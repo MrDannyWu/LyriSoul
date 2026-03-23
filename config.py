@@ -13,9 +13,11 @@ from typing import List
 class Settings(BaseSettings):
     """Application configuration — all values can be overridden via .env."""
 
-    # ── Spotify ────────────────────────────────────────────────────────────
+    # Security / Auth
+    secret_key: str = "supersecret_lyrica_key_change_in_production"
+    
+    # Spotify BYOK Config (Can be empty on first boot)
     spotify_client_id: str = ""
-    spotify_client_secret: str = ""
     spotify_redirect_uri: str = "http://127.0.0.1:666/callback"
 
     # Scopes needed by the app
@@ -53,6 +55,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
 
