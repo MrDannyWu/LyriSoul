@@ -9,6 +9,19 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator
 from typing import List
 
+import sys
+import os
+
+def get_env_path():
+    if getattr(sys, 'frozen', False):
+        base_dir = os.path.dirname(sys.executable)
+    else:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    data_dir = os.path.join(base_dir, "data")
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir, exist_ok=True)
+    return os.path.join(data_dir, ".env")
 
 class Settings(BaseSettings):
     """Application configuration — all values can be overridden via .env."""
@@ -52,7 +65,7 @@ class Settings(BaseSettings):
     lyrics_cache_ttl: int = 300
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=get_env_path(),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",

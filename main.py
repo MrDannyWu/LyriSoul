@@ -132,7 +132,8 @@ def config_status():
 @app.post("/api/config/setup", response_model=SetupStatusResponse, tags=["system"])
 def config_setup(data: SetupRequestModel):
     """Save the user's custom Spotify Client ID to .env and hot-reload."""
-    env_path = os.path.join(os.path.dirname(__file__), ".env")
+    from config import get_env_path
+    env_path = get_env_path()
     
     # Write to .env file (No client secret needed for PKCE!)
     set_key(env_path, "SPOTIFY_CLIENT_ID", data.client_id.strip())
