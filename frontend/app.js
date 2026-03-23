@@ -929,6 +929,24 @@ async function init() {
   if (btnShuffle) btnShuffle.addEventListener('click', toggleShuffle);
   if (btnRepeat) btnRepeat.addEventListener('click', toggleRepeat);
 
+  // Lyric interactive seeking
+  if (lyricsList) {
+    lyricsList.addEventListener('click', (e) => {
+      const lineEl = e.target.closest('.lyric-line');
+      if (!lineEl || !state.syncedLyrics || !state.syncedLyrics.length) return;
+      
+      const idx = parseInt(lineEl.dataset.idx, 10);
+      if (isNaN(idx)) return;
+      
+      const targetMs = state.syncedLyrics[idx].time_ms;
+      if (typeof targetMs === 'number') {
+        controlPlayer('seek', { position_ms: targetMs });
+        state.progressMs = targetMs;
+        state._fetchPerfMark = performance.now();
+      }
+    });
+  }
+
   // Progress Bar Scrubber
   const pbWrap = document.querySelector('.progress-bar-wrap');
   if (pbWrap) {

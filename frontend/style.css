@@ -721,10 +721,6 @@ body {
   text-align: center;
 }
 
-.lyric-line:hover {
-  color: rgba(240, 244, 255, 0.45);
-}
-
 .lyric-line.active {
   color: var(--text-primary);
   font-size: 1.85rem;
@@ -735,6 +731,10 @@ body {
 
 .lyric-line.past {
   color: rgba(240, 244, 255, 0.12);
+}
+
+.lyric-line:hover:not(.active) {
+  color: rgba(240, 244, 255, 0.45);
 }
 
 /* Plain lyrics (no sync) */
