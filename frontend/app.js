@@ -552,6 +552,21 @@ function stopAll() {
   cancelAnimationFrame(state.rafId);
 }
 
+async function handleLogout(e) {
+  if (e) e.preventDefault();
+  stopAll();
+  try {
+    await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
+  } catch (err) {
+    console.error('Logout failed:', err);
+  }
+  // Clear the UI and revert to the login screen
+  showLogin();
+  // Ensure the config panel is hidden and login button is shown
+  loginContent.classList.remove('hidden');
+  configContent.classList.add('hidden');
+}
+
 /* ── Share Card Generator ────────────────────────────────────────── */
 const shareModal = $('share-modal');
 const shareCanvas = $('share-canvas');
@@ -876,7 +891,7 @@ async function init() {
   }
 
   const logoutBtn = $('logout-btn');
-  if (logoutBtn) logoutBtn.addEventListener('click', stopAll);
+  if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
 
   // Config Events
   if (btnOpenConfig) btnOpenConfig.addEventListener('click', () => {
