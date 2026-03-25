@@ -14,6 +14,54 @@ API overview:
 """
 
 import logging
+import os
+import sys
+from logging.handlers import TimedRotatingFileHandler
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Logging — daily rotating files in data/logs/
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _setup_logging():
+    # Resolve logs directory next to the data/ folder
+    if getattr(sys, "frozen", False):
+        base_dir = os.path.dirname(sys.executable)
+    else:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    logs_dir = os.path.join(base_dir, "logs")
+    os.makedirs(logs_dir, exist_ok=True)
+
+    log_format = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+    date_format = "%Y-%m-%d %H:%M:%S"
+    formatter = logging.Formatter(log_format, datefmt=date_format)
+
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+
+    # Daily rotating file handler — one file per day: logs/2026-03-25.log
+    from datetime import date
+    log_file = os.path.join(logs_dir, f"{date.today().isoformat()}.log")
+    file_handler = TimedRotatingFileHandler(
+        log_file, when="midnight", interval=1,
+        backupCount=30, encoding="utf-8", utc=False
+    )
+    # Rename rolled files to YYYY-MM-DD.log instead of .log.2026-03-24
+    file_handler.suffix = "%Y-%m-%d"
+    file_handler.namer = lambda name: os.path.join(
+        os.path.dirname(name),
+        f"{name.split('.')[-1]}.log"
+    ) if "." in os.path.basename(name) else name
+    file_handler.setFormatter(formatter)
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    root_logger.addHandler(console_handler)
+    root_logger.addHandler(file_handler)
+
+_setup_logging()
+logger = logging.getLogger(__name__)
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
