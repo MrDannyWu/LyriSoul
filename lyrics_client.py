@@ -19,6 +19,7 @@ import difflib
 from typing import Dict, Optional, Tuple
 
 import httpx
+import asyncio
 
 from models import LyricLine, LyricsResponse
 
@@ -171,111 +172,173 @@ async def search_lyrics_raw(query: str) -> Optional[dict]:
 # Fallback Fetchers (Netease & KuGou)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _is_valid_match(query_track: str, result_track: str, target_duration: int = 0, result_duration: int = 0) -> bool:
+def _is_romanized(artist: str) -> bool:
+    """Returns True if the artist name has NO CJK characters (likely pinyin/romanized).
+    Examples: 'Da Da Yue Dui', 'Teng Ge Er', 'Jay Chou' → False (Jay Chou has no CJK)
+    vs '腰樂隊', '周杰倫' → False, 'The Beatles' → True (but that's fine, they won't be in CN databases)
+    """
+    return bool(artist) and not re.search(
+        r'[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]', artist
+    )
+
+
+def _is_valid_match(query_track: str, result_track: str,
+                    query_artist: str = "", result_artist: str = "",
+                    target_duration: int = 0, result_duration: int = 0) -> bool:
     """
     Prevent wildly incorrect lyrics matching.
-    Handles bilingual titles like 'A Love Letter 情书' which may appear as
-    '情书' or 'A Love Letter' in different music databases.
+    Handles bilingual titles like 'A Love Letter \u60c5\u4e66' which may appear as
+    '\u60c5\u4e66' or 'A Love Letter' in different music databases.
+    Also handles Traditional/Simplified Chinese variations.
     """
     def clean(s: str) -> str:
-        s = re.sub(r'\(.*?\)|\[.*?\]|（.*?）|【.*?】|-.*', '', s)
-        return re.sub(r'[^\w]', '', s).lower()
+        s = re.sub(r'\(.*?\)|\[.*?\]|\uff08.*?\uff09|\u3010.*?\u3011|-.*', '', s)
+        # Keep dots: "\u518d.\u89c1" must stay distinct from "\u518d\u89c1" or "\u518d\u89c1\u4e86"
+        return re.sub(r'[^\w\.]', '', s).lower()
 
     def cjk_only(s: str) -> str:
-        """Extract only CJK (Chinese/Japanese/Korean) characters."""
         return re.sub(r'[^\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]', '', s)
 
     def ascii_only(s: str) -> str:
-        """Extract only ASCII word characters."""
         return re.sub(r'[^a-z0-9]', '', s.lower())
+
+    # --- Artist match confidence ---
+    artist_match = "QUESTIONABLE"
+    if query_artist and result_artist:
+        cjk_a_q = cjk_only(query_artist)
+        cjk_a_r = cjk_only(result_artist)
+        if cjk_a_q and cjk_a_r:
+            if set(cjk_a_q) & set(cjk_a_r):
+                artist_match = "STRONG"
+            else:
+                return False  # Both have CJK but share nothing = different artists
+        else:
+            ascii_q = ascii_only(query_artist)
+            ascii_r = ascii_only(result_artist)
+            if ascii_q and ascii_r:
+                a_ratio = difflib.SequenceMatcher(None, ascii_q, ascii_r).ratio()
+                if a_ratio > 0.4 or ascii_q in ascii_r or ascii_r in ascii_q:
+                    artist_match = "STRONG"
+                else:
+                    return False  # Both have Ascii but share nothing
 
     c_query = clean(query_track)
     c_res   = clean(result_track)
 
-    # If either cleans to empty, allow through
-    if not c_query or not c_res:
-        return True
-
-    # --- Strategy 1: Full text ratio ---
-    ratio = difflib.SequenceMatcher(None, c_query, c_res).ratio()
-    threshold = 0.35
-    if len(c_query) <= 2:  threshold = 0.8
-    elif len(c_query) <= 4: threshold = 0.5
-    if ratio >= threshold:
-        return True
-
-    # --- Strategy 2: CJK sub-match ---
-    # "A Love Letter 情书" and "情书" share the same CJK part
-    cjk_q = cjk_only(query_track)
-    cjk_r = cjk_only(result_track)
-    if cjk_q and cjk_r:
-        cjk_ratio = difflib.SequenceMatcher(None, cjk_q, cjk_r).ratio()
-        if cjk_ratio >= 0.7:
-            return True
-        # One is a substring of the other (e.g. "情书" in "情书（重制版）")
-        if cjk_q in cjk_r or cjk_r in cjk_q:
+    def _check_text() -> bool:
+        if not c_query or not c_res:
             return True
 
-    # --- Strategy 3: ASCII sub-match ---
-    ascii_q = ascii_only(query_track)
-    ascii_r = ascii_only(result_track)
-    if ascii_q and ascii_r and len(ascii_q) >= 4:
-        ascii_ratio = difflib.SequenceMatcher(None, ascii_q, ascii_r).ratio()
-        if ascii_ratio >= 0.75:
-            return True
-        if ascii_q in ascii_r or ascii_r in ascii_q:
+        # --- Strategy 1: Full text ratio ---
+        ratio = difflib.SequenceMatcher(None, c_query, c_res).ratio()
+        threshold = 0.72 if ('.' in c_query or len(c_query) <= 4) else 0.35
+        if ratio >= threshold:
             return True
 
-    # --- Strategy 4: Duration fingerprint fallback ---
-    if target_duration > 0 and result_duration > 0:
-        if abs(target_duration - result_duration) <= 3500:
-            # Relaxed length constraint: allow if one title is contained in the other
-            # or if length ratio is reasonable (handles bilingual vs short titles)
+        # --- Strategy 2: CJK sub-match ---
+        cjk_q, cjk_r = cjk_only(query_track), cjk_only(result_track)
+        if cjk_q and cjk_r:
+            if difflib.SequenceMatcher(None, cjk_q, cjk_r).ratio() >= 0.85:
+                return True
+            if cjk_q in cjk_r or cjk_r in cjk_q:
+                longer, shorter = max(len(cjk_q), len(cjk_r)), min(len(cjk_q), len(cjk_r))
+                if shorter > 0 and longer / shorter >= 2.0:
+                    if target_duration > 0 and result_duration > 0 and abs(target_duration - result_duration) <= 3500:
+                        return True
+
+        # --- Strategy 3: ASCII sub-match ---
+        ascii_q, ascii_r = ascii_only(query_track), ascii_only(result_track)
+        if ascii_q and ascii_r and len(ascii_q) >= 4:
+            if difflib.SequenceMatcher(None, ascii_q, ascii_r).ratio() >= 0.75:
+                return True
+            if ascii_q in ascii_r or ascii_r in ascii_q:
+                if target_duration > 0 and result_duration > 0 and abs(target_duration - result_duration) <= 3500:
+                    return True
+
+        # --- Strategy 4: Duration fingerprint fallback ---
+        # Highly dangerous if text is 0% match. ONLY allow if Artist is undeniably identical.
+        if artist_match == "STRONG" and target_duration > 0 and result_duration > 0 and abs(target_duration - result_duration) <= 3500:
             len_ratio = min(len(c_query), len(c_res)) / max(len(c_query), len(c_res), 1)
-            if len_ratio >= 0.4 or len(c_query) == len(c_res):
+            # 0.7 ratio allows "无双" to match "無雙乐队版" but completely rejects "陷阱" matching "一个人的夜"
+            if len_ratio >= 0.7 or len(c_query) == len(c_res):
                 return True
 
-    return False
+        return False
+
+    is_text_match = _check_text()
+
+    # CRITICAL: If the artist is highly questionable (e.g. cross-script "Kawa" vs "张栋梁"),
+    # we CANNOT trust a simple track text match (like "一个人的夜"). 
+    # It must be mathematically verified by audio duration fingerprint!
+    if is_text_match and artist_match == "QUESTIONABLE":
+        if target_duration > 0 and result_duration > 0:
+            if abs(target_duration - result_duration) > 3500:
+                return False
+
+    return is_text_match
 
 async def search_lyrics_netease(artist: str, track: str, duration_ms: int = 0) -> Optional[str]:
     """Fallback 1: Search Netease Cloud Music (163) for LRC lyrics."""
-    # Build query variants to handle bilingual titles like 'A Love Letter 情书'
     def cjk_only(s):
-        return re.sub(r'[^\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]', '', s).strip()
+        # Keep dots: "再.见" must be searched as "再.见", not "再见"
+        return re.sub(r'[^\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af\.]', '', s).strip()
     def ascii_only(s):
         return re.sub(r'[^a-zA-Z0-9 ]', '', s).strip()
 
-    cjk_part   = cjk_only(track)
-    ascii_part  = ascii_only(track)
-    queries = [f"{artist} {track}", track]
+    cjk_part  = cjk_only(track)
+    ascii_part = ascii_only(track)
+
+    # When artist is romanized (pinyin like 'Da Da Yue Dui'), Netease won't recognise
+    # it — skip artist-prefixed queries and go straight to track-only searches.
+    romaji = _is_romanized(artist)
+
+    queries: list[str] = []
+    if not romaji:
+        queries.append(f"{artist} {track}")
+    queries.append(track)
     if cjk_part and cjk_part != track:
-        queries.insert(1, f"{artist} {cjk_part}")
-        queries.insert(2, cjk_part)
+        if not romaji:
+            queries.insert(len(queries) - 1, f"{artist} {cjk_part}")
+        queries.insert(len(queries) - 1, cjk_part)
     if ascii_part and ascii_part.lower() != track.lower() and len(ascii_part) >= 3:
         queries.append(ascii_part)
+
+    # Deduplicate while preserving order
+    seen: set = set()
+    queries = [q for q in queries if not (q in seen or seen.add(q))]  # type: ignore
 
     search_url = "https://music.163.com/api/search/get/web"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Referer": "https://music.163.com/"
     }
-    
+
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            for query in queries:
-                params = {"s": query, "type": 1, "limit": 8}
-                res = await client.get(search_url, params=params, headers=headers)
+            cjk_title = cjk_only(track)
+            limit = 20 if (romaji or len(cjk_title) <= 3) else 8
+            
+            reqs = [
+                client.get(search_url, params={"s": q, "type": 1, "limit": limit}, headers=headers)
+                for q in queries
+            ]
+            responses = await asyncio.gather(*reqs, return_exceptions=True)
+
+            for query, res in zip(queries, responses):
+                if isinstance(res, Exception) or res.status_code != 200:
+                    continue
                 data = res.json()
-                
+
                 songs = data.get("result", {}).get("songs", [])
                 if not songs:
                     continue
-                    
+
                 for song in songs:
                     song_name = song.get("name", "")
                     song_dur = song.get("duration", 0)
-                    
-                    if not _is_valid_match(track, song_name, duration_ms, song_dur):
+                    song_artists = "".join([a.get("name", "") for a in song.get("artists", [])])
+
+                    if not _is_valid_match(track, song_name, artist, song_artists, duration_ms, song_dur):
                         continue
 
                     song_id = song["id"]
@@ -283,14 +346,14 @@ async def search_lyrics_netease(artist: str, track: str, duration_ms: int = 0) -
                     l_params = {"id": song_id, "lv": 1, "tv": -1, "kv": 1}
                     l_res = await client.get(lyric_url, params=l_params, headers=headers)
                     l_data = l_res.json()
-                    
+
                     lrc = l_data.get("lrc", {}).get("lyric", "")
                     if lrc:
                         logger.info("Netease lyrics found via query '%s' for '%s - %s'", query, artist, track)
                         return lrc
     except Exception as e:
         logger.warning("Netease fallback error for '%s - %s': %s", artist, track, e)
-        
+
     return None
 
 async def search_lyrics_kugou(artist: str, track: str, duration_ms: int = 0) -> Optional[str]:
@@ -298,35 +361,49 @@ async def search_lyrics_kugou(artist: str, track: str, duration_ms: int = 0) -> 
     Search KuGou for raw LRC text. Works well for tracks not on LRCLIB.
     """
     def cjk_only(s):
-        return re.sub(r'[^\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]', '', s).strip()
+        # Keep dots: "再.见" must be searched as "再.见", not "再见"
+        return re.sub(r'[^\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af\.]', '', s).strip()
     def ascii_only(s):
         return re.sub(r'[^a-zA-Z0-9 ]', '', s).strip()
 
-    cjk_part   = cjk_only(track)
-    ascii_part  = ascii_only(track)
-    queries = [f"{artist} {track}", track]
+    cjk_part  = cjk_only(track)
+    ascii_part = ascii_only(track)
+    romaji = _is_romanized(artist)
+
+    queries: list[str] = []
+    if not romaji:
+        queries.append(f"{artist} {track}")
+    queries.append(track)
     if cjk_part and cjk_part != track:
-        queries.insert(1, f"{artist} {cjk_part}")
-        queries.insert(2, cjk_part)
+        if not romaji:
+            queries.insert(len(queries) - 1, f"{artist} {cjk_part}")
+        queries.insert(len(queries) - 1, cjk_part)
     if ascii_part and ascii_part.lower() != track.lower() and len(ascii_part) >= 3:
         queries.append(ascii_part)
+
+    seen: set = set()
+    queries = [q for q in queries if not (q in seen or seen.add(q))]  # type: ignore
 
     search_url = "http://songsearch.kugou.com/song_search_v2"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
-    
+
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            for query in queries:
-                params = {
-                    "keyword": query,
-                    "page": 1,
-                    "pagesize": 5,
-                    "platform": "WebFilter"
-                }
-                # 1. Search for the song
-                res = await client.get(search_url, params=params, headers=headers)
+            cjk_title = cjk_only(track)
+            limit = 10 if (romaji or len(cjk_title) <= 3) else 5
+            reqs = [
+                client.get(search_url, params={
+                    "keyword": q, "page": 1, "pagesize": limit, "platform": "WebFilter"
+                }, headers=headers)
+                for q in queries
+            ]
+            responses = await asyncio.gather(*reqs, return_exceptions=True)
+
+            for query, res in zip(queries, responses):
+                if isinstance(res, Exception) or res.status_code != 200:
+                    continue
                 data = res.json()
                 songs = data.get("data", {}).get("lists", [])
                 if not songs:
@@ -334,56 +411,47 @@ async def search_lyrics_kugou(artist: str, track: str, duration_ms: int = 0) -> 
                 for song in songs:
                     song_name = song.get("SongName", "")
                     song_dur = song.get("Duration", 0) * 1000
-                    
-                    if not _is_valid_match(track, song_name, duration_ms, song_dur):
+                    artist_name = song.get("SingerName", "")
+
+                    if not _is_valid_match(track, song_name, artist, artist_name, duration_ms, song_dur):
                         continue
-                        
+
                     filehash = song.get("FileHash")
                     artist_name = song.get("SingerName")
                     duration = song.get("Duration", 0) * 1000
                     album_id = song.get("ID")
-                    
-                    # 2. Search for the lyric accesskey
+
                     l_search_url = "http://krcs.kugou.com/search"
                     l_params = {
-                        "ver": 1,
-                        "man": "yes",
-                        "client": "mobi",
+                        "ver": 1, "man": "yes", "client": "mobi",
                         "keyword": f"{artist_name} - {song_name}",
-                        "duration": duration,
-                        "hash": filehash,
-                        "album_audio_id": album_id
+                        "duration": duration, "hash": filehash, "album_audio_id": album_id
                     }
                     l_res = await client.get(l_search_url, params=l_params, headers=headers)
                     l_data = l_res.json()
                     candidates = l_data.get("candidates", [])
                     if not candidates:
                         continue
-                        
+
                     accesskey = candidates[0].get("accesskey")
                     lrc_id = candidates[0].get("id")
-                    
-                    # 3. Download and decode base64 LRC
+
                     dl_url = "http://lyrics.kugou.com/download"
                     dl_params = {
-                        "ver": 1,
-                        "client": "pc",
-                        "id": lrc_id,
-                        "accesskey": accesskey,
-                        "fmt": "lrc",
-                        "charset": "utf8"
+                        "ver": 1, "client": "pc", "id": lrc_id,
+                        "accesskey": accesskey, "fmt": "lrc", "charset": "utf8"
                     }
                     dl_res = await client.get(dl_url, params=dl_params, headers=headers)
                     dl_data = dl_res.json()
-                    
+
                     lrc_b64 = dl_data.get("content", "")
                     if lrc_b64:
                         logger.info("KuGou lyrics found via query '%s' for '%s - %s'", query, artist, track)
                         return base64.b64decode(lrc_b64).decode('utf-8')
-                    
+
     except Exception as e:
         logger.warning("KuGou fallback error for '%s - %s': %s", artist, track, e)
-        
+
     return None
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -411,10 +479,44 @@ async def get_lyrics(artist: str, track: str, duration_ms: int = 0) -> LyricsRes
     # 2. Exact fetch
     raw = await fetch_lyrics_raw(artist, track)
 
-    # 3. Fuzzy fallback
+    # 3. LRCLIB exact retry with CJK-only sub-title for bilingual tracks.
+    # e.g. "A Short Story 一个短篇" → also try artist + "一个短篇"
+    # Do NOT try the ASCII-only part ("A Short Story") — it may match unrelated English songs.
+    if not raw:
+        def _cjk_part(s: str) -> str:
+            return re.sub(r'[^\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af\.]', '', s).strip()
+        cjk_track = _cjk_part(track)
+        if cjk_track and cjk_track != track:
+            logger.info("LRCLIB exact retry (CJK only): '%s' – '%s'", artist, cjk_track)
+            raw = await fetch_lyrics_raw(artist, cjk_track)
+
+    # 3b. LRCLIB fuzzy search variants
     if not raw:
         logger.info("Falling back to LRCLIB search for '%s' – '%s'", artist, track)
-        raw = await search_lyrics_raw(f"{artist} {track}")
+        search_queries = [f"{artist} {track}"]
+        cjk_track = re.sub(r'[^\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af\.]', '', track).strip()
+        if cjk_track and cjk_track != track:
+            search_queries.append(f"{artist} {cjk_track}")
+            search_queries.append(cjk_track)
+
+        reqs = [search_lyrics_raw(q) for q in search_queries]
+        responses = await asyncio.gather(*reqs, return_exceptions=True)
+        
+        for q, candidate in zip(search_queries, responses):
+            if isinstance(candidate, Exception) or not candidate:
+                continue
+            # Validate: reject LRCLIB results that don't match the actual track.
+            # "I Love You" by a random English artist must NOT match "i love you 我爱你".
+            result_track_name = candidate.get("trackName", "")
+            result_artist_name = candidate.get("artistName", "")
+            result_duration_ms = int(candidate.get("duration", 0) * 1000)
+            if _is_valid_match(track, result_track_name, artist, result_artist_name, duration_ms, result_duration_ms):
+                raw = candidate
+                logger.info("LRCLIB fuzzy accepted (query='%s', result='%s')", q, result_track_name)
+                break
+            else:
+                logger.info("LRCLIB fuzzy REJECTED (query='%s', result='%s' doesn't match '%s')", q, result_track_name, track)
+
 
     # 4. Fallbacks (Netease -> KuGou)
     source = "lrclib"
@@ -428,17 +530,18 @@ async def get_lyrics(artist: str, track: str, duration_ms: int = 0) -> LyricsRes
     # If LRCLIB fails to find the track entirely, OR if it finds an entry but it only has PLAIN lyrics,
     # we heavily prioritize SYNCED lyrics, so we STILL execute the fallbacks to see if Netease has synced!
     if not synced_raw:
-        logger.info("Falling back to Netease Cloud Music for '%s' – '%s'", artist, track)
-        netease_lrc = await search_lyrics_netease(artist, track, duration_ms)
-        if netease_lrc:
+        logger.info("Executing Netease and KuGou fallbacks concurrently...")
+        netease_task = asyncio.create_task(search_lyrics_netease(artist, track, duration_ms))
+        kugou_task = asyncio.create_task(search_lyrics_kugou(artist, track, duration_ms))
+        
+        netease_lrc, kugou_lrc = await asyncio.gather(netease_task, kugou_task, return_exceptions=True)
+        
+        if isinstance(netease_lrc, str) and netease_lrc:
             synced_raw = netease_lrc
             source = "netease"
-        else:
-            logger.info("Falling back to KuGou for '%s' – '%s'", artist, track)
-            kugou_lrc = await search_lyrics_kugou(artist, track, duration_ms)
-            if kugou_lrc:
-                synced_raw = kugou_lrc
-                source = "kugou"
+        elif isinstance(kugou_lrc, str) and kugou_lrc:
+            synced_raw = kugou_lrc
+            source = "kugou"
 
     # Build response
     synced_lines = parse_lrc(synced_raw) if synced_raw.strip() else []

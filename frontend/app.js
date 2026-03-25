@@ -314,22 +314,21 @@ function updateTrack(data) {
     trackNameEl.title = track.name;
     artistNameEl.textContent = track.artists.map(a => a.name).join(', ');
 
-    // Album art cross-fade — route through local cache proxy
+    // Album art cross-fade
     if (track.album.cover_url) {
-      const cachedUrl = `/api/cover/${track.id}?url=${encodeURIComponent(track.album.cover_url)}`;
       albumArt.style.opacity = '0';
       if (bgAlbumArt) bgAlbumArt.style.opacity = '0';
       const img = new Image();
       img.onload = () => {
-        albumArt.src = cachedUrl;
-        if (bgAlbumArt) bgAlbumArt.src = cachedUrl;
+        albumArt.src = track.album.cover_url;
+        if (bgAlbumArt) bgAlbumArt.src = track.album.cover_url;
         requestAnimationFrame(() => {
           albumArt.style.transition = 'opacity .6s ease';
           albumArt.style.opacity = '1';
           if (bgAlbumArt) bgAlbumArt.style.opacity = '1';
         });
       };
-      img.src = cachedUrl;
+      img.src = track.album.cover_url;
     }
   }
 
@@ -1160,7 +1159,7 @@ async function initUserMenu() {
 
   document.getElementById('dd-about')?.addEventListener('click', () => {
     closeMenu();
-    showToast('Lyrica v1.0 — Spotify Lyrics Player ✨', 3000);
+    showToast('LyriSoul v1.0 — Spotify Lyrics Player ✨', 3000);
   });
 }
 

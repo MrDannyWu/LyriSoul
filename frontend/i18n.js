@@ -36,7 +36,7 @@ const _translations = {
     menu_profile:     'Profile',
     menu_lang:        '中 / EN',
     menu_shortcuts:   'Keyboard Shortcuts',
-    menu_about:       'About Lyrica',
+    menu_about:       'About LyriSoul',
 
     /* ── Lyrics panel ────────── */
     title_lyrics:     'Lyrics',
@@ -92,7 +92,7 @@ const _translations = {
     menu_profile:     '用户资料',
     menu_lang:        '中 / EN',
     menu_shortcuts:   '键盘快捷键',
-    menu_about:       '关于 Lyrica',
+    menu_about:       '关于 LyriSoul',
 
     /* ── Lyrics panel ────────── */
     title_lyrics:     '歌 词',

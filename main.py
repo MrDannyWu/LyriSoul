@@ -91,10 +91,10 @@ from dotenv import set_key
 # ─────────────────────────────────────────────────────────────────────────────
 
 app = FastAPI(
-    title="Spotify Lyrics API",
+    title="LyriSoul API",
     description=(
-        "A FastAPI backend that wraps Spotify's Web API and LRCLIB to deliver "
-        "real-time current-track info with synchronised lyrics and audio features."
+        "LyriSoul — real-time Spotify lyrics with synced LRC support, "
+        "audio features, and local caching."
     ),
     version="1.0.0",
     docs_url="/docs",

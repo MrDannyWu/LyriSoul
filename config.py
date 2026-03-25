@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     """Application configuration — all values can be overridden via .env."""
 
     # Security / Auth — must be stable across restarts so session cookies survive
-    secret_key: str = "lyrica-stable-session-key-do-not-change"
+    secret_key: str = "lyrisoul-stable-session-key-do-not-change"
 
     # Spotify BYOK Config (Can be empty on first boot)
     spotify_client_id: str = ""
