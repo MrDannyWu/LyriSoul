@@ -314,21 +314,22 @@ function updateTrack(data) {
     trackNameEl.title = track.name;
     artistNameEl.textContent = track.artists.map(a => a.name).join(', ');
 
-    // Album art cross-fade
+    // Album art cross-fade — route through local cache proxy
     if (track.album.cover_url) {
+      const cachedUrl = `/api/cover/${track.id}?url=${encodeURIComponent(track.album.cover_url)}`;
       albumArt.style.opacity = '0';
       if (bgAlbumArt) bgAlbumArt.style.opacity = '0';
       const img = new Image();
       img.onload = () => {
-        albumArt.src = track.album.cover_url;
-        if (bgAlbumArt) bgAlbumArt.src = track.album.cover_url;
+        albumArt.src = cachedUrl;
+        if (bgAlbumArt) bgAlbumArt.src = cachedUrl;
         requestAnimationFrame(() => {
           albumArt.style.transition = 'opacity .6s ease';
           albumArt.style.opacity = '1';
           if (bgAlbumArt) bgAlbumArt.style.opacity = '1';
         });
       };
-      img.src = track.album.cover_url;
+      img.src = cachedUrl;
     }
   }
 
@@ -1058,13 +1059,114 @@ async function init() {
   // Close on backdrop click
   const backdrop = shareModal?.querySelector('.share-modal-backdrop');
   if (backdrop) backdrop.addEventListener('click', closeShareModal);
-  // Language toggle event
-  const langToggle = $('lang-toggle-btn');
-  if (langToggle) langToggle.addEventListener('click', () => window.i18n?.toggle());
 
   // Apply translations on first paint
   window.i18n?.applyTranslations();
 }
 
+/* ── User Avatar Menu ───────────────────────────────────────────── */
+async function initUserMenu() {
+  const wrap      = document.getElementById('user-menu-wrap');
+  const btn       = document.getElementById('user-avatar-btn');
+  const imgEl     = document.getElementById('user-avatar-img');
+  const initials  = document.getElementById('user-avatar-initials');
+  const tooltip   = document.getElementById('user-avatar-tooltip');
+  const dropdown  = document.getElementById('user-dropdown');
+  const ddImg     = document.getElementById('dd-avatar-img');
+  const ddInit    = document.getElementById('dd-avatar-initials');
+  const ddName    = document.getElementById('dd-user-name');
+  const ddFollowers = document.getElementById('dd-user-followers');
 
-document.addEventListener('DOMContentLoaded', init);
+  if (!wrap || !btn) return;
+
+  // Load profile (cached in sessionStorage)
+  let profile = null;
+  try {
+    const cached = sessionStorage.getItem('_lyrica_profile');
+    if (cached) {
+      profile = JSON.parse(cached);
+    } else {
+      const res = await fetch('/api/user/profile');
+      if (res.ok) {
+        profile = await res.json();
+        sessionStorage.setItem('_lyrica_profile', JSON.stringify(profile));
+      }
+    }
+  } catch (e) { /* non-critical */ }
+
+  if (profile) {
+    const name = profile.name || '?';
+    const initial = name.charAt(0).toUpperCase();
+    tooltip.textContent = name;
+
+    // Topbar avatar
+    if (profile.avatar_url) {
+      imgEl.src = profile.avatar_url;
+      imgEl.onload = () => {
+        imgEl.classList.remove('hidden');
+        initials.style.display = 'none';
+      };
+    } else {
+      initials.textContent = initial;
+    }
+
+    // Dropdown header
+    ddName.textContent = name;
+    if (profile.followers !== undefined) {
+      ddFollowers.textContent = `${profile.followers.toLocaleString()} 关注者`;
+    }
+    if (profile.avatar_url) {
+      ddImg.src = profile.avatar_url;
+      ddImg.onload = () => {
+        ddImg.classList.remove('hidden');
+        ddInit.style.display = 'none';
+      };
+    } else {
+      ddInit.textContent = initial;
+    }
+  }
+
+  // Toggle dropdown
+  function openMenu() {
+    wrap.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
+  }
+  function closeMenu() {
+    wrap.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+  }
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    wrap.classList.contains('open') ? closeMenu() : openMenu();
+  });
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) closeMenu();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeMenu();
+  });
+
+  // Menu actions
+  document.getElementById('dd-lang')?.addEventListener('click', () => {
+    closeMenu();
+    window.i18n?.toggle();
+  });
+
+  document.getElementById('dd-profile')?.addEventListener('click', () => {
+    closeMenu();
+    if (profile?.profile_url) window.open(profile.profile_url, '_blank');
+  });
+
+
+  document.getElementById('dd-about')?.addEventListener('click', () => {
+    closeMenu();
+    showToast('Lyrica v1.0 — Spotify Lyrics Player ✨', 3000);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+  // Init avatar menu only on player screen (after first login it's visible)
+  initUserMenu();
+});
+

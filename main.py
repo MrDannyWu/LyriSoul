@@ -85,16 +85,6 @@ from models import (
 )
 from dotenv import set_key
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Logging
-# ─────────────────────────────────────────────────────────────────────────────
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-logger = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # App initialisation
@@ -135,7 +125,6 @@ app.add_middleware(
 app.include_router(auth.router)
 
 # ── Static frontend ───────────────────────────────────────────────
-import os
 _frontend_dir = os.path.join(os.path.dirname(__file__), "frontend")
 app.mount("/static", StaticFiles(directory=_frontend_dir), name="static")
 
@@ -166,8 +155,64 @@ def require_spotify(request: Request):
 def health():
     return {"status": "ok", "version": app.version}
 
+
 # ─────────────────────────────────────────────────────────────────────────────
-# /api/config — Dynamic Setup (BYOK)
+# /api/cover — Album art proxy with permanent local disk cache
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _cover_cache_dir() -> str:
+    if getattr(sys, "frozen", False):
+        base = os.path.dirname(sys.executable)
+    else:
+        base = os.path.dirname(os.path.abspath(__file__))
+    d = os.path.join(base, "data", "cache")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+@app.get("/api/cover/{track_id}", tags=["music"], summary="Album art with local cache")
+async def get_cover(track_id: str, url: str = Query(..., description="Spotify CDN image URL")):
+    """
+    Proxy endpoint for album cover images.
+    - Checks data/cache/{track_id}.jpg on disk first.
+    - If missing, downloads from Spotify CDN and saves permanently.
+    - Returns the image bytes with proper Content-Type.
+    """
+    cache_path = os.path.join(_cover_cache_dir(), f"{track_id}.jpg")
+
+    # Serve from disk cache
+    if os.path.exists(cache_path):
+        return FileResponse(
+            cache_path,
+            media_type="image/jpeg",
+            headers={"Cache-Control": "public, max-age=31536000, immutable"},
+        )
+
+    # Download from Spotify CDN
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(url, follow_redirects=True)
+            resp.raise_for_status()
+            image_bytes = resp.content
+            content_type = resp.headers.get("content-type", "image/jpeg")
+    except Exception as e:
+        logger.warning("Cover download failed for track %s: %s", track_id, e)
+        raise HTTPException(status_code=502, detail="Failed to fetch album cover")
+
+    # Save to disk (best-effort)
+    try:
+        with open(cache_path, "wb") as f:
+            f.write(image_bytes)
+        logger.info("Album cover cached: %s", cache_path)
+    except Exception as e:
+        logger.warning("Cover cache write failed: %s", e)
+
+    return Response(
+        content=image_bytes,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+    )
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.get("/api/config/status", response_model=SetupStatusResponse, tags=["system"])
@@ -262,6 +307,33 @@ async def current_track(sp=Depends(require_spotify)):
         logger.warning("audio_features task failed (non-critical): %s", e)
         audio_features = None
 
+    # ── Album cover: cache to disk server-side, rewrite URL ─────────────────
+    # Download happens in background so it never delays the response.
+    # The cover_url in the response is rewritten to the local proxy endpoint,
+    # so the browser always loads from disk (works even with stale JS cache).
+    if track.album and track.album.cover_url:
+        cdn_url = track.album.cover_url
+        cache_path = os.path.join(_cover_cache_dir(), f"{track.id}.jpg")
+
+        if not os.path.exists(cache_path):
+            async def _download_cover(tid: str, url: str, dest: str):
+                import httpx as _httpx
+                try:
+                    async with _httpx.AsyncClient(timeout=10.0) as c:
+                        r = await c.get(url, follow_redirects=True)
+                        r.raise_for_status()
+                        with open(dest, "wb") as f:
+                            f.write(r.content)
+                    logger.info("Album cover cached: %s", dest)
+                except Exception as exc:
+                    logger.warning("Cover download failed for %s: %s", tid, exc)
+
+            asyncio.create_task(_download_cover(track.id, cdn_url, cache_path))
+
+        # Always point client to local proxy (serves from disk if cached,
+        # falls back to CDN download if not yet ready)
+        track.album.cover_url = f"/api/cover/{track.id}?url={cdn_url}"
+
     return CurrentTrackResponse(
         track=track,
         lyrics=lyrics,
@@ -288,6 +360,55 @@ async def get_lyrics(
     with plain-text lyrics as fallback.
     """
     return await lyrics_client.get_lyrics(artist, track, duration_ms)
+
+
+@app.get("/api/user/profile", tags=["user"], summary="Get current user's Spotify profile")
+async def get_user_profile(sp=Depends(require_spotify)):
+    """
+    Returns display name, Spotify profile URL, follower count and avatar URL.
+    The avatar image is cached to data/cache/avatar_{user_id}.jpg on first fetch.
+    """
+    import asyncio, httpx as _httpx
+    try:
+        me = sp.me()
+    except Exception as e:
+        logger.error("Spotify me() failed: %s", e)
+        raise HTTPException(status_code=502, detail="Failed to fetch user profile")
+
+    user_id    = me.get("id", "")
+    name       = me.get("display_name") or user_id
+    profile_url = me.get("external_urls", {}).get("spotify", "")
+    followers  = me.get("followers", {}).get("total", 0)
+    images     = me.get("images", [])
+    avatar_cdn = images[0]["url"] if images else None
+
+    # Cache avatar to disk
+    local_avatar_url = None
+    if avatar_cdn and user_id:
+        cache_filename = f"avatar_{user_id}.jpg"
+        cache_path = os.path.join(_cover_cache_dir(), cache_filename)
+        if not os.path.exists(cache_path):
+            try:
+                async with _httpx.AsyncClient(timeout=10.0) as c:
+                    r = await c.get(avatar_cdn, follow_redirects=True)
+                    r.raise_for_status()
+                    with open(cache_path, "wb") as f:
+                        f.write(r.content)
+                logger.info("User avatar cached: %s", cache_path)
+            except Exception as exc:
+                logger.warning("Avatar download failed: %s", exc)
+        if os.path.exists(cache_path):
+            local_avatar_url = f"/api/cover/avatar_{user_id}?url={avatar_cdn}"
+
+    return {
+        "id": user_id,
+        "name": name,
+        "profile_url": profile_url,
+        "followers": followers,
+        "avatar_url": local_avatar_url or avatar_cdn,
+        "avatar_cdn": avatar_cdn,
+    }
+
 
 
 @app.get(

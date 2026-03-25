@@ -31,8 +31,12 @@ const _translations = {
     btn_cancel:       'Cancel',
     btn_save_login:   'Save & Login',
 
-    /* ── Player topbar ───────── */
+    /* ── Player topbar / User menu ─ */
     btn_logout:       'Logout',
+    menu_profile:     'Profile',
+    menu_lang:        '中 / EN',
+    menu_shortcuts:   'Keyboard Shortcuts',
+    menu_about:       'About Lyrica',
 
     /* ── Lyrics panel ────────── */
     title_lyrics:     'Lyrics',
@@ -83,8 +87,12 @@ const _translations = {
     btn_cancel:       '取消',
     btn_save_login:   '保存并登录',
 
-    /* ── Player topbar ───────── */
-    btn_logout:       '退出',
+    /* ── Player topbar / User menu ─ */
+    btn_logout:       '退出账号',
+    menu_profile:     '用户资料',
+    menu_lang:        '中 / EN',
+    menu_shortcuts:   '键盘快捷键',
+    menu_about:       '关于 Lyrica',
 
     /* ── Lyrics panel ────────── */
     title_lyrics:     '歌 词',

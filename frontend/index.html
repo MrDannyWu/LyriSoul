@@ -103,11 +103,49 @@
         </div>
       </div>
       <div class="topbar-right">
-        <span id="user-name" class="user-label"></span>
-        <!-- Language Toggle -->
-        <button id="lang-toggle-btn" class="btn-lang-toggle" data-i18n-title="btn_lang_toggle_title"
-          title="Switch Language">中</button>
-        <a href="/auth/logout" class="btn-small" id="logout-btn" data-i18n="btn_logout">退出</a>
+        <!-- User Avatar Button -->
+        <div class="user-menu-wrap" id="user-menu-wrap">
+          <button class="user-avatar-btn" id="user-avatar-btn" aria-label="User menu" aria-expanded="false">
+            <img id="user-avatar-img" src="" alt="" class="user-avatar-img hidden" />
+            <span id="user-avatar-initials" class="user-avatar-initials">?</span>
+          </button>
+          <span class="user-avatar-tooltip" id="user-avatar-tooltip"></span>
+
+          <!-- Dropdown Menu -->
+          <div class="user-dropdown" id="user-dropdown" role="menu">
+            <!-- Profile header inside dropdown -->
+            <div class="user-dropdown-header" id="user-dropdown-header">
+              <img id="dd-avatar-img" src="" alt="" class="dd-avatar-img hidden" />
+              <span id="dd-avatar-initials" class="dd-avatar-initials">?</span>
+              <div class="dd-user-info">
+                <span class="dd-user-name" id="dd-user-name">—</span>
+                <span class="dd-user-followers" id="dd-user-followers"></span>
+              </div>
+            </div>
+
+            <button class="user-dropdown-item" id="dd-profile" role="menuitem">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+              <span data-i18n="menu_profile">用户资料</span>
+            </button>
+
+
+            <button class="user-dropdown-item" id="dd-lang" role="menuitem">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+              <span id="dd-lang-label" data-i18n="menu_lang">中 / EN</span>
+            </button>
+
+            <button class="user-dropdown-item" id="dd-about" role="menuitem">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+              <span data-i18n="menu_about">关于 Lyrica</span>
+            </button>
+
+
+            <a href="/auth/logout" class="user-dropdown-item user-dropdown-logout" role="menuitem" id="dd-logout">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+              <span data-i18n="btn_logout">退出账号</span>
+            </a>
+          </div>
+        </div>
       </div>
     </header>
 
