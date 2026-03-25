@@ -28,26 +28,61 @@ LRCLIB_BASE = "https://lrclib.net/api"
 LRC_TIMETAG_RE = re.compile(r"\[(\d+):(\d+\.\d+)\]")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Simple in-memory cache (artist+title → (timestamp, LyricsResponse))
+# Persistent file cache — data/lyrics/<artist>—<track>.json, never expires
 # ─────────────────────────────────────────────────────────────────────────────
 
-_cache: Dict[str, Tuple[float, LyricsResponse]] = {}
-_CACHE_TTL = 300  # 5 minutes
+import json
+import os
+import sys
 
+def _lyrics_dir() -> str:
+    if getattr(sys, "frozen", False):
+        base = os.path.dirname(sys.executable)
+    else:
+        base = os.path.dirname(os.path.abspath(__file__))
+    d = os.path.join(base, "data", "lyrics")
+    os.makedirs(d, exist_ok=True)
+    return d
 
 def _cache_key(artist: str, track: str) -> str:
-    return f"{artist.lower().strip()}|{track.lower().strip()}"
+    """Human-readable, filesystem-safe key: 'adele—hello'."""
+    def safe(s: str) -> str:
+        s = s.lower().strip()
+        return re.sub(r'[\\/:*?"<>|]', '_', s)
+    return f"{safe(artist)}—{safe(track)}"
 
+def _cache_path(key: str) -> str:
+    return os.path.join(_lyrics_dir(), f"{key}.json")
 
-def _get_cached(key: str) -> Optional[LyricsResponse]:
-    entry = _cache.get(key)
-    if entry and (time.time() - entry[0]) < _CACHE_TTL:
-        return entry[1]
+# In-memory hot-cache (avoids disk reads on repeated calls within session)
+_hot_cache: Dict[str, "LyricsResponse"] = {}
+
+def _get_cached(key: str) -> Optional["LyricsResponse"]:
+    # 1. Hot (memory) cache
+    if key in _hot_cache:
+        return _hot_cache[key]
+    # 2. Disk cache
+    path = _cache_path(key)
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            result = LyricsResponse(**data)
+            _hot_cache[key] = result
+            return result
+        except Exception as e:
+            logger.warning("Lyrics disk cache read error (%s): %s", path, e)
     return None
 
-
-def _set_cache(key: str, value: LyricsResponse) -> None:
-    _cache[key] = (time.time(), value)
+def _set_cache(key: str, value: "LyricsResponse") -> None:
+    _hot_cache[key] = value
+    path = _cache_path(key)
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(value.model_dump(), f, ensure_ascii=False, indent=2)
+        logger.info("Lyrics cached to disk: %s", path)
+    except Exception as e:
+        logger.warning("Lyrics disk cache write error (%s): %s", path, e)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -363,5 +398,10 @@ async def get_lyrics(artist: str, track: str, duration_ms: int = 0) -> LyricsRes
         source=source,
     )
 
-    _set_cache(key, result)
+    # Only persist to disk if we actually found lyrics — don't cache "not found"
+    if synced_lines or plain_raw:
+        _set_cache(key, result)
+    else:
+        _hot_cache[key] = result  # session-only, retried next startup
+
     return result
