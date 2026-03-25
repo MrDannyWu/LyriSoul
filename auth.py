@@ -12,6 +12,8 @@ Token lifecycle:
 """
 
 import logging
+import json
+import os
 from typing import Optional
 
 import spotipy
@@ -19,15 +21,41 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from spotipy.oauth2 import SpotifyPKCE
 
-from config import settings
+from config import settings, get_env_path
 from models import AuthStatusResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Helpers
+# Persistent token storage (survives restarts)
 # ─────────────────────────────────────────────────────────────────────────────
+
+def _token_path() -> str:
+    data_dir = os.path.dirname(get_env_path())
+    return os.path.join(data_dir, "spotify_token.json")
+
+def _load_token() -> Optional[dict]:
+    path = _token_path()
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return None
+
+def _save_token(token_info: dict):
+    path = _token_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(token_info, f)
+
+def _delete_token():
+    path = _token_path()
+    if os.path.exists(path):
+        os.remove(path)
+
 
 def _get_oauth_manager(state: Optional[str] = None) -> SpotifyPKCE:
     """Create a fresh SpotifyPKCE instance (stateless helper)."""
@@ -42,30 +70,30 @@ def _get_oauth_manager(state: Optional[str] = None) -> SpotifyPKCE:
 
 
 def get_token_from_session(request: Request) -> Optional[dict]:
-    """Return the stored token dict from session, or None."""
-    return request.session.get("token_info")
+    """Return token: first from session (fast path), then from disk."""
+    token = request.session.get("token_info")
+    if not token:
+        token = _load_token()
+        if token:
+            request.session["token_info"] = token  # warm the session cache
+    return token
 
 
 def get_spotify_client(request: Request) -> spotipy.Spotify:
-    """
-    Build an authenticated Spotipy client from the session token.
-    Raises 401 if not logged in.
-    """
     token_info = get_token_from_session(request)
     if not token_info:
         raise HTTPException(status_code=401, detail="Not authenticated. Please login via /auth/login")
 
-    # Auto-refresh if expired
     oauth = _get_oauth_manager()
     if oauth.is_token_expired(token_info):
         try:
-            # Note: SpotifyPKCE.refresh_access_token returns a dict directly,
-            # unlike get_access_token!
             token_info = oauth.refresh_access_token(token_info["refresh_token"])
+            _save_token(token_info)                       # persist refreshed token
             request.session["token_info"] = token_info
-            logger.info("Token refreshed for session")
+            logger.info("Token refreshed and saved to disk")
         except Exception as e:
             logger.warning("Token refresh failed: %s", e)
+            _delete_token()
             request.session.clear()
             raise HTTPException(
                 status_code=401,
@@ -139,8 +167,9 @@ def callback(request: Request, code: Optional[str] = None, error: Optional[str] 
         logger.error("Token exchange failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to exchange authorization code")
 
-    # Save to session
+    # Save to session AND disk (persistent across restarts)
     request.session["token_info"] = token_info
+    _save_token(token_info)
 
     # Fetch user profile and persist display_name for convenience
     sp = spotipy.Spotify(auth=token_info["access_token"])
@@ -176,7 +205,8 @@ def refresh_token(request: Request):
 
 @router.get("/logout", summary="Clear session and logout")
 def logout(request: Request):
-    """Clear the server-side session."""
+    """Clear the server-side session and delete the persisted token."""
+    _delete_token()
     request.session.clear()
     return {"message": "Logged out successfully"}
 

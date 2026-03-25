@@ -46,6 +46,19 @@ body {
   color: var(--text-primary);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+/* ── Chromium Desktop Drag Protects ──────────────────────────────── */
+button, a, input,
+.progress-bar-wrap,
+.lyrics-container,
+.toast,
+.share-modal,
+.login-card,
+.window-controls {
+  -webkit-app-region: no-drag;
 }
 
 /* ── Dynamic Album Art Background ────────────────────────────────── */
@@ -248,7 +261,9 @@ body {
 }
 
 /* ── Configuration Setup ─────────────────────────────────────────── */
-.hidden { display: none !important; }
+.hidden {
+  display: none !important;
+}
 
 #btn-open-config {
   background: transparent;
@@ -263,7 +278,10 @@ body {
   align-items: center;
   gap: 4px;
 }
-#btn-open-config:hover { opacity: 1; }
+
+#btn-open-config:hover {
+  opacity: 1;
+}
 
 #config-content {
   text-align: left;
@@ -271,23 +289,89 @@ body {
   width: 100%;
 }
 
-.config-title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; }
-.config-sub { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 24px; }
-
-.form-group { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
-.form-group label { font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.5px;}
-.form-group input { 
-  background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;
-  color: #fff; font-family: monospace; padding: 12px; font-size: 0.9rem; outline: none; transition: border 0.3s;
+.config-title {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 4px;
 }
-.form-group input:focus { border-color: var(--accent); background: rgba(0, 0, 0, 0.5); }
 
-.config-actions { display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end; }
-.btn-save, .btn-cancel { padding: 10px 20px; border-radius: 100px; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
-.btn-cancel { background: rgba(255,255,255,0.05); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.1); }
-.btn-cancel:hover { background: rgba(255,255,255,0.1); }
-.btn-save { background: var(--accent); color: #000; }
-.btn-save:hover { background: #1ed760; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(29, 185, 84, 0.3); }
+.config-sub {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  font-family: monospace;
+  padding: 12px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border 0.3s;
+}
+
+.form-group input:focus {
+  border-color: var(--accent);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.config-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  justify-content: flex-end;
+}
+
+.btn-save,
+.btn-cancel {
+  padding: 10px 20px;
+  border-radius: 100px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.btn-cancel {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-save {
+  background: var(--accent);
+  color: #000;
+}
+
+.btn-save:hover {
+  background: #1ed760;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(29, 185, 84, 0.3);
+}
 
 /* ── Top Bar ─────────────────────────────────────────────────────── */
 .topbar {
@@ -379,7 +463,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* Vertically center album and controls */
+  justify-content: center;
+  /* Vertically center album and controls */
   gap: 20px;
   overflow-y: auto;
   border-right: 1px solid var(--glass-border);
@@ -492,6 +577,7 @@ body {
 .toast-info {
   border-left: 4px solid #3498db;
 }
+
 .artist-name {
   font-size: 1rem;
   color: var(--text-secondary);
@@ -526,7 +612,8 @@ body {
   transition: color 0.2s, transform 0.2s;
   padding: 8px;
   border-radius: 50%;
-  position: relative; /* needed for the repeat-badge absolute positioning */
+  position: relative;
+  /* needed for the repeat-badge absolute positioning */
 }
 
 .control-btn:hover {
@@ -564,7 +651,8 @@ body {
 
 .progress-bar-wrap {
   width: 100%;
-  height: 20px; /* Invisible expanded hover hitbox for user interaction */
+  height: 20px;
+  /* Invisible expanded hover hitbox for user interaction */
   display: flex;
   align-items: center;
   cursor: pointer;
@@ -610,7 +698,7 @@ body {
   height: 12px;
   background: #fff;
   border-radius: 50%;
-  box-shadow: 0 0 10px rgba(0,0,0,0.6);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
   transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -859,8 +947,10 @@ body {
   padding: 5px 7px;
   border-radius: 8px;
   transition: color .2s, background .2s;
-  margin-left: auto; /* push to right side of flex header */
+  margin-left: auto;
+  /* push to right side of flex header */
 }
+
 .share-card-btn:hover {
   color: var(--accent);
   background: var(--accent-dim);
@@ -875,7 +965,10 @@ body {
   align-items: center;
   justify-content: center;
 }
-.share-modal.hidden { display: none; }
+
+.share-modal.hidden {
+  display: none;
+}
 
 .share-modal-backdrop {
   position: absolute;
@@ -897,13 +990,20 @@ body {
   gap: 20px;
   max-width: 520px;
   width: calc(100vw - 48px);
-  box-shadow: 0 24px 64px rgba(0,0,0,.6);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, .6);
   animation: shareModalIn .3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 @keyframes shareModalIn {
-  from { opacity: 0; transform: scale(.92) translateY(20px); }
-  to   { opacity: 1; transform: scale(1)   translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(.92) translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .share-modal-header {
@@ -932,12 +1032,16 @@ body {
   border-radius: 50%;
   transition: color .2s, background .2s;
 }
-.share-close-btn:hover { color: var(--text-primary); background: rgba(255,255,255,.08); }
+
+.share-close-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, .08);
+}
 
 .share-canvas-wrap {
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
 }
 
 .share-canvas-wrap canvas {
@@ -965,13 +1069,18 @@ body {
   font-size: .9rem;
   cursor: pointer;
   transition: transform .2s, box-shadow .2s, opacity .2s;
-  box-shadow: 0 4px 20px rgba(29,185,84,.35);
+  box-shadow: 0 4px 20px rgba(29, 185, 84, .35);
 }
+
 .share-download-btn:hover {
   transform: scale(1.04);
-  box-shadow: 0 6px 28px rgba(29,185,84,.5);
+  box-shadow: 0 6px 28px rgba(29, 185, 84, .5);
 }
-.share-download-btn:active { transform: scale(.97); opacity: .9; }
+
+.share-download-btn:active {
+  transform: scale(.97);
+  opacity: .9;
+}
 
 /* ── Lyric picker strip ───────────────────────────────────────────── */
 .share-lyric-picker {
@@ -980,16 +1089,23 @@ body {
   overflow-x: auto;
   padding: 4px 2px 8px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,.1) transparent;
+  scrollbar-color: rgba(255, 255, 255, .1) transparent;
   flex-shrink: 0;
 }
-.share-lyric-picker::-webkit-scrollbar { height: 3px; }
-.share-lyric-picker::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 4px; }
+
+.share-lyric-picker::-webkit-scrollbar {
+  height: 3px;
+}
+
+.share-lyric-picker::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, .12);
+  border-radius: 4px;
+}
 
 .lyric-chip {
   flex-shrink: 0;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255, 255, 255, .12);
+  background: rgba(255, 255, 255, .05);
   color: var(--text-secondary);
   border-radius: 100px;
   padding: 5px 14px;
@@ -1001,10 +1117,12 @@ body {
   text-overflow: ellipsis;
   transition: background .15s, color .15s, border-color .15s;
 }
+
 .lyric-chip:hover {
-  background: rgba(255,255,255,.1);
+  background: rgba(255, 255, 255, .1);
   color: var(--text-primary);
 }
+
 .lyric-chip.selected {
   background: var(--accent-dim);
   border-color: var(--accent);
@@ -1014,8 +1132,8 @@ body {
 
 /* ── Language Toggle Button ───────────────────────────────────────── */
 .btn-lang-toggle {
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   color: var(--text-secondary);
   border-radius: 100px;
   font-size: .75rem;
@@ -1025,10 +1143,11 @@ body {
   letter-spacing: .05em;
   transition: background .2s, color .2s, border-color .2s;
 }
+
 .btn-lang-toggle:hover {
-  background: rgba(255,255,255,0.12);
+  background: rgba(255, 255, 255, 0.12);
   color: var(--text-primary);
-  border-color: rgba(255,255,255,0.3);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 /* ── Mobile Responsiveness (Adaptive) ────────────────────────────── */
@@ -1037,28 +1156,29 @@ body {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
   }
-  
+
   .track-panel {
     border-right: none;
     border-bottom: 1px solid var(--glass-border);
     padding: 24px 16px;
     gap: 16px;
-    justify-content: flex-start; /* Reset center for mobile stack */
+    justify-content: flex-start;
+    /* Reset center for mobile stack */
   }
 
   .album-wrapper {
     width: 180px;
     height: 180px;
   }
-  
+
   .track-name {
     font-size: 1.2rem;
   }
-  
+
   .lyrics-panel {
     padding: 16px !important;
   }
-  
+
   .lyric-line {
     font-size: 1.4rem;
   }
@@ -1068,14 +1188,128 @@ body {
   }
 }
 
+/* ── Desktop Windows Resizer Handle ────────────────────────────── */
+/* ── Desktop Windows Resizer Handle ────────────────────────────── */
+.desktop-resizer {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 28px;
+  height: 28px;
+  cursor: se-resize;
+  z-index: 99999;
+  -webkit-app-region: no-drag;
+  opacity: 0.25;
+  transition: opacity 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.desktop-resizer:hover,
+.desktop-resizer:active {
+  opacity: 0.9;
+}
+
+.desktop-resizer::before {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 12px;
+  height: 12px;
+  border-right: 2px solid rgba(255, 255, 255, 0.9);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.9);
+  border-bottom-right-radius: 3px;
+  pointer-events: none;
+}
+
+.desktop-resizer::after {
+  content: '';
+  position: absolute;
+  bottom: 13px;
+  right: 13px;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid rgba(255, 255, 255, 0.5);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+  border-bottom-right-radius: 2px;
+  pointer-events: none;
+}
+
 @media (max-height: 700px) and (min-width: 769px) {
+
   /* On very short desktop screens, scale down album art to fit */
   .album-wrapper {
     width: 180px;
     height: 180px;
   }
+
   .track-panel {
     padding: 16px 20px;
     gap: 16px;
   }
+}
+
+/* ── Native OS Window Controls (Topbar Embedded) ─────────────────── */
+.window-controls {
+  position: absolute;
+  right: 0;
+  display: flex;
+  gap: 6px;
+  background: rgba(14, 18, 25, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px;
+  opacity: 0;
+  transform: translateX(20px) scale(0.95);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.topbar-right:hover .topbar-actions {
+  transform: translateX(-84px);
+}
+
+.topbar-right:hover .window-controls {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  pointer-events: auto;
+}
+
+.win-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.win-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.win-btn.win-min:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  transform: scale(1.05);
+}
+
+.win-btn.win-close-btn:hover {
+  background: #e81123 !important;
+  color: white !important;
+  transform: scale(1.05);
+  box-shadow: 0 0 12px rgba(232, 17, 35, 0.4);
 }

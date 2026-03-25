@@ -69,8 +69,8 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=settings.secret_key,
     session_cookie="lyrics_session",
-    max_age=3600 * 8,   # 8-hour session lifetime
-    https_only=False,    # Set to True in production behind HTTPS
+    max_age=3600 * 24 * 30,  # 30-day session lifetime
+    https_only=False,
     same_site="lax",
 )
 

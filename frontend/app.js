@@ -418,12 +418,12 @@ async function saveConfig() {
     client_id: cfgClientId?.value.trim() || '',
     redirect_uri: cfgRedirectUri?.value.trim() || 'http://127.0.0.1:666/callback',
   };
-  
+
   if (!payload.client_id) {
     showToast(window.i18n ? window.i18n.t('msg_req_client_id') : 'Please enter your Spotify Developer Client ID', 'error');
     return;
   }
-  
+
   // Basic validation for typical Spotify Client ID format (32 hex characters)
   if (!/^[a-fA-F0-9]{32}$/.test(payload.client_id)) {
     showToast('错误：无效的 Spotify Client ID！\n这通常是一串由 32 位数字和字母组成的特征码，请确保您没有多复制空格或标点符号。', 'error');
@@ -436,7 +436,7 @@ async function saveConfig() {
     btnSaveConfig.setAttribute('data-i18n', 'msg_saving');
   }
   btnSaveConfig.textContent = window.i18n ? window.i18n.t('msg_saving') : 'Saving...';
-  
+
   try {
     const res = await fetch(`${API_BASE}/api/config/setup`, {
       method: 'POST',
@@ -906,6 +906,65 @@ async function init() {
   });
   if (btnSaveConfig) btnSaveConfig.addEventListener('click', saveConfig);
 
+  /* ── Desktop PyWebView: Edge Resize + Window Controls ─────────── */
+  window.addEventListener('pywebviewready', function () {
+    const api = window.pywebview && window.pywebview.api;
+    if (!api) return;
+
+    // ── Edge Resize Detection ──
+    const B = 6; // border thickness in px
+    const cursors = {
+      't': 'n-resize', 'b': 's-resize', 'l': 'w-resize', 'r': 'e-resize',
+      'tl': 'nw-resize', 'tr': 'ne-resize', 'bl': 'sw-resize', 'br': 'se-resize'
+    };
+    const htValues = {
+      't': 12, 'b': 15, 'l': 10, 'r': 11,
+      'tl': 13, 'tr': 14, 'bl': 16, 'br': 17
+    };
+
+    function getEdge(e) {
+      const w = window.innerWidth, h = window.innerHeight;
+      const t = e.clientY < B, b = e.clientY > h - B;
+      const l = e.clientX < B, r = e.clientX > w - B;
+      if (t && l) return 'tl'; if (t && r) return 'tr';
+      if (b && l) return 'bl'; if (b && r) return 'br';
+      if (t) return 't'; if (b) return 'b';
+      if (l) return 'l'; if (r) return 'r';
+      return '';
+    }
+
+    document.addEventListener('mousemove', (e) => {
+      const edge = getEdge(e);
+      document.body.style.cursor = edge ? cursors[edge] : '';
+    });
+
+    document.addEventListener('mousedown', (e) => {
+      if (e.buttons !== 1) return;
+      const edge = getEdge(e);
+      if (edge) {
+        e.preventDefault();
+        e.stopPropagation();
+        api.start_resize(htValues[edge]);
+      }
+    }, true); // ← capture phase: runs BEFORE easy_drag
+
+    // ── Window Control Buttons ──
+    const btnMin = document.getElementById('win-min');
+    const btnClose = document.getElementById('win-close');
+    if (btnMin) {
+      btnMin.addEventListener('click', (e) => {
+        e.stopPropagation();
+        api.minimize_window();
+      });
+    }
+    if (btnClose) {
+      btnClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        api.close_window();
+      });
+    }
+  });
+
   // Intercept Login Button
   const loginBtn = $('login-btn');
   if (loginBtn) {
@@ -934,10 +993,10 @@ async function init() {
     lyricsList.addEventListener('click', (e) => {
       const lineEl = e.target.closest('.lyric-line');
       if (!lineEl || !state.syncedLyrics || !state.syncedLyrics.length) return;
-      
+
       const idx = parseInt(lineEl.dataset.idx, 10);
       if (isNaN(idx)) return;
-      
+
       const targetMs = state.syncedLyrics[idx].time_ms;
       if (typeof targetMs === 'number') {
         controlPlayer('seek', { position_ms: targetMs });
@@ -955,13 +1014,13 @@ async function init() {
       const rect = pbWrap.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const pct = Math.max(0, Math.min(1, x / rect.width));
-      
+
       const pb = document.getElementById('progress-bar');
       if (pb) {
         pb.style.transition = 'none'; // Snap instantly to mouse
         pb.style.width = (pct * 100) + '%';
       }
-      
+
       const targetMs = Math.floor(pct * state.durationMs);
       const timeCurrent = document.getElementById('time-current');
       if (timeCurrent) timeCurrent.textContent = formatTime(targetMs);
@@ -978,10 +1037,10 @@ async function init() {
     document.addEventListener('mouseup', (e) => {
       if (state.isDragging) {
         state.isDragging = false;
-        
+
         const pb = document.getElementById('progress-bar');
         if (pb) pb.style.transition = 'width 1s linear, background-color 0.2s ease'; // Restore CSS smoothing
-        
+
         const targetMs = updateScrub(e);
         if (targetMs !== undefined) {
           controlPlayer('seek', { position_ms: targetMs });
@@ -1009,4 +1068,3 @@ async function init() {
 
 
 document.addEventListener('DOMContentLoaded', init);
-
