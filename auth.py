@@ -57,6 +57,30 @@ def _delete_token():
         os.remove(path)
 
 
+def _pkce_path() -> str:
+    data_dir = os.path.dirname(get_env_path())
+    return os.path.join(data_dir, "pkce_verifier.tmp")
+
+def _save_pkce_verifier(verifier: str):
+    with open(_pkce_path(), "w", encoding="utf-8") as f:
+        f.write(verifier)
+
+def _load_pkce_verifier() -> Optional[str]:
+    path = _pkce_path()
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return f.read().strip()
+        except Exception:
+            pass
+    return None
+
+def _delete_pkce_verifier():
+    path = _pkce_path()
+    if os.path.exists(path):
+        os.remove(path)
+
+
 def _get_oauth_manager(state: Optional[str] = None) -> SpotifyPKCE:
     """Create a fresh SpotifyPKCE instance (stateless helper)."""
     return SpotifyPKCE(
@@ -119,11 +143,13 @@ def login(request: Request):
 
     oauth = _get_oauth_manager()
     auth_url = oauth.get_authorize_url()
-    
-    # Store the dynamically generated code_verifier in the user's secure session.
-    # Without this, the stateless oauth object loses the verifier across the redirect!
+
+    # Store code_verifier in BOTH session AND disk file.
+    # The session cookie may be dropped when WebView navigates to an external
+    # domain (accounts.spotify.com), so the disk file is the reliable fallback.
     request.session["pkce_verifier"] = oauth.code_verifier
-    
+    _save_pkce_verifier(oauth.code_verifier)
+
     logger.info("Redirecting to Spotify auth: %s", auth_url)
     return RedirectResponse(url=auth_url)
 
@@ -144,8 +170,14 @@ def callback(request: Request, code: Optional[str] = None, error: Optional[str] 
 
     oauth = _get_oauth_manager()
     
-    # Restore the PKCE code_verifier from the session so Spotify can validate the code
+    # Restore the PKCE code_verifier — try session first, then disk fallback
     verifier = request.session.pop("pkce_verifier", None)
+    if not verifier:
+        verifier = _load_pkce_verifier()
+        if verifier:
+            logger.info("Restored PKCE verifier from disk fallback")
+    _delete_pkce_verifier()  # always clean up
+
     if not verifier:
         logger.error("Missing PKCE code_verifier in session")
         raise HTTPException(status_code=400, detail="Session expired or invalid PKCE request. Please try logging in again.")
