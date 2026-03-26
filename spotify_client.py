@@ -80,7 +80,7 @@ def _parse_track(
 # return it when Spotify's API momentarily goes silent (e.g. right after pause/resume).
 _last_playback_data: Optional[dict] = None
 _last_playback_ts: float = 0.0
-_PLAYBACK_CACHE_TTL: float = 30.0  # seconds
+_PLAYBACK_CACHE_TTL: float = 86400.0  # 24 hours (prevents Spotify API idle timeouts from violently kicking user out of Lyrics UI after pausing for 30s)
 
 def get_current_track(sp: spotipy.Spotify) -> Optional[TrackModel]:
     """

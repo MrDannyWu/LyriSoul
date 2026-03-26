@@ -258,22 +258,22 @@ def _is_valid_match(query_track: str, result_track: str,
 
         # --- Strategy 4: Duration fingerprint fallback ---
         # Highly dangerous if text is < threshold. 
-        if target_duration > 0 and result_duration > 0 and abs(target_duration - result_duration) <= 3500:
-            if artist_match == "STRONG":
+        if target_duration > 0 and result_duration > 0:
+            diff_ms = abs(target_duration - result_duration)
+            if artist_match == "STRONG" and diff_ms <= 8000:
                 # Artist is unequivocally identical. Allow generous len_ratio for "Live" or "Remix" mismatches
                 len_ratio = min(len(c_query), len(c_res)) / max(len(c_query), len(c_res), 1)
                 if len_ratio >= 0.6 or len(c_query) == len(c_res):
                     return True
-            else:
+            elif diff_ms <= 3500:
                 # Artist is QUESTIONABLE. Extremely restrictive duration mapping to support 
                 # Traditional <> Simplified Chinese 1:1 translations (e.g. "好險好險" vs "好险好险").
                 if len(c_query) == len(c_res) and len(c_query) > 0:
-                    # Very short titles (e.g., "無雙" vs "无双") where all characters happen to change 
-                    # from Traditional to Simplified will inevitably share 0 characters. We permit these
-                    # safely because mathematically identical string lengths + tight audio duration matching 
-                    # is overwhelmingly likely to be correct. For longer titles, require >= 1 shared char.
                     if len(c_query) <= 3 or (set(c_query) & set(c_res)):
                         return True
+
+        if artist_match == "STRONG":
+            logger.info(f"LYRICS REJECTED (STRONG ARTIST): '{query_artist} - {query_track}' vs '{result_artist} - {result_track}' (diff: {abs(target_duration-result_duration)}ms, text_ratio: {difflib.SequenceMatcher(None, c_query, c_res).ratio():.2f})")
 
         return False
 
@@ -325,14 +325,18 @@ async def search_lyrics_netease(artist: str, track: str, duration_ms: int = 0) -
     # it — skip artist-prefixed queries and go straight to track-only searches.
     romaji = _is_romanized(artist)
 
-    queries: list[str] = []
-    if not romaji:
-        queries.append(f"{artist} {track}")
+    # Always include the artist + track query as the primary search term.
+    # We still try the artist-prefixed search even if romanized, as it 
+    # fixes searches for English band names like 'sadog'.
+    queries: list[str] = [f"{artist} {track}"]
+    
+    # Fallback to track name only (useful for pinyin artists Netease might not know)
     queries.append(track)
+    
     if cjk_part and cjk_part != track:
-        if not romaji:
-            queries.insert(len(queries) - 1, f"{artist} {cjk_part}")
+        queries.insert(len(queries) - 1, f"{artist} {cjk_part}")
         queries.insert(len(queries) - 1, cjk_part)
+        
     if ascii_part and ascii_part.lower() != track.lower() and len(ascii_part) >= 3:
         queries.append(ascii_part)
 
@@ -349,7 +353,7 @@ async def search_lyrics_netease(artist: str, track: str, duration_ms: int = 0) -
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             cjk_title = cjk_only(track)
-            limit = 20 if (romaji or len(cjk_title) <= 3) else 8
+            limit = 100 if (romaji or len(cjk_title) <= 3) else 8
             
             reqs = [
                 client.get(search_url, params={"s": q, "type": 1, "limit": limit}, headers=headers)
@@ -3140,7 +3144,7 @@ async def get_lyrics(artist: str, track: str, duration_ms: int = 0) -> LyricsRes
     # 1. Cache hit
     cached = _get_cached(key)
     if cached:
-        logger.debug("Lyrics cache hit: %s | %s", artist, track)
+        logger.info("Lyrics cache hit: %s | %s", artist, track)
         return cached
 
     # 2. Exact fetch

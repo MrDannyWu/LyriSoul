@@ -235,7 +235,7 @@ def refresh_token(request: Request):
         raise HTTPException(status_code=500, detail="Token refresh failed")
 
 
-@router.get("/logout", summary="Clear session and logout")
+@router.post("/logout", summary="Clear session and logout")
 def logout(request: Request):
     """Clear the server-side session and delete the persisted token."""
     _delete_token()
@@ -251,9 +251,30 @@ def logout(request: Request):
 def auth_status(request: Request):
     """Returns login state and basic user info (if logged in)."""
     token_info = get_token_from_session(request)
-    user = request.session.get("user", {})
+    if not token_info:
+        return AuthStatusResponse(logged_in=False)
+
+    user = request.session.get("user")
+    
+    # If we have a token but NO user info in session (common in fresh WebView),
+    # fetch it once from Spotify and warm the session.
+    if not user:
+        try:
+            sp = spotipy.Spotify(auth=token_info["access_token"])
+            me = sp.current_user()
+            user = {
+                "id": me.get("id"),
+                "display_name": me.get("display_name"),
+                "avatar_url": (me.get("images") or [{}])[0].get("url"),
+            }
+            request.session["user"] = user
+            logger.info("Warmed session for user: %s", user.get("display_name"))
+        except Exception as e:
+            logger.warning("Session warming failed: %s", e)
+            return AuthStatusResponse(logged_in=True)
+
     return AuthStatusResponse(
-        logged_in=token_info is not None,
+        logged_in=True,
         display_name=user.get("display_name"),
         user_id=user.get("id"),
         avatar_url=user.get("avatar_url"),

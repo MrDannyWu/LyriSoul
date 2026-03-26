@@ -17,120 +17,122 @@
 const _translations = {
   en: {
     /* ── Login ───────────────── */
-    login_sub:        'Synchronize lyrics in real-time, feel the rhythm',
-    btn_login_spotify:'Login with Spotify',
-    login_hint:       'Requires a Spotify Premium or Free account',
-    btn_open_config:  '⚙️ Config',
+    login_sub: 'Synchronize lyrics in real-time, feel the rhythm',
+    btn_login_spotify: 'Login with Spotify',
+    login_hint: 'Requires a Spotify Premium or Free account',
+    btn_open_config: '⚙️ Config',
 
     /* ── Configuration form ──── */
-    config_title:     'App Configuration',
-    config_sub:       'Enter your Spotify Developer credentials to get started.',
-    lbl_client_id:    'Client ID',
-    lbl_client_secret:'Client Secret',
+    config_title: 'App Configuration (BYOK)',
+    config_sub_byok_1: 'Spotify restricts developer API quotas. Please go to ',
+    config_sub_byok_2: ' to create a free App and obtain your exclusive Client ID to unlock local playback. Login is not possible without this.',
+    lbl_client_id: 'Client ID',
+    lbl_client_secret: 'Client Secret',
     lbl_redirect_uri: 'Redirect URI',
-    btn_cancel:       'Cancel',
-    btn_save_login:   'Save & Login',
+    btn_cancel: 'Back',
+    btn_save_login: 'Save API Key',
 
     /* ── Player topbar / User menu ─ */
-    btn_logout:       'Logout',
-    menu_profile:     'Profile',
-    menu_lang:        '中 / EN',
-    menu_shortcuts:   'Keyboard Shortcuts',
-    menu_about:       'About LyriSoul',
+    btn_logout: 'Logout',
+    menu_profile: 'Profile',
+    menu_lang: '中 / EN',
+    menu_shortcuts: 'Keyboard Shortcuts',
+    menu_about: 'About LyriSoul',
 
     /* ── Lyrics panel ────────── */
-    title_lyrics:     'Lyrics',
-    idle_waiting:     'Waiting for music to play...',
-    no_lyrics:        'No lyrics found for this track',
-    lrc_synced:       'Synced',
-    lrc_plain:        'Plain',
+    title_lyrics: 'Lyrics',
+    idle_waiting: 'Waiting for music to play...',
+    no_lyrics: 'No lyrics found for this track',
+    lrc_synced: 'Synced',
+    lrc_plain: 'Plain',
 
     /* ── Nothing-playing overlay */
-    np_title:         'Nothing is playing right now',
-    np_hint:          'Open Spotify and start playing',
+    np_title: 'Nothing is playing right now',
+    np_hint: 'Open Spotify and start playing',
 
     /* ── Player controls ──────── */
     btn_shuffle_title: 'Shuffle',
-    btn_prev_title:    'Previous',
+    btn_prev_title: 'Previous',
     btn_play_pause_title: 'Play/Pause',
-    btn_next_title:    'Next',
-    btn_repeat_title:  'Repeat',
+    btn_next_title: 'Next',
+    btn_repeat_title: 'Repeat',
     btn_open_config_title: 'Configure API',
     btn_lang_toggle_title: 'Switch Language',
     cfg_client_id_placeholder: 'e.g. 1a2b3c4d5e...',
 
     /* ── Share modal ─────────── */
-    share_title:      'Share Lyrics Card',
-    share_btn_dl:     'Download Card',
-    btn_share_tooltip:'Share Lyrics Card',
+    share_title: 'Share Lyrics Card',
+    share_btn_dl: 'Download Card',
+    btn_share_tooltip: 'Share Lyrics Card',
 
     /* ── Dynamic JS strings ──── */
-    msg_scroll_hint:  'Manual scroll \u2014 auto-scrolls back in 2s',
-    msg_req_client_id:'Please fill in Client ID',
-    msg_saving:       'Saving\u2026',
-    msg_save_fail:    'Failed to save configuration.',
+    msg_scroll_hint: 'Manual scroll \u2014 auto-scrolls back in 2s',
+    msg_req_client_id: 'Please fill in Client ID',
+    msg_saving: 'Saving\u2026',
+    msg_save_fail: 'Failed to save configuration.',
   },
 
   zh: {
     /* ── Login ───────────────── */
-    login_sub:        '实时同步歌词，跟随音乐律动',
-    btn_login_spotify:'使用 Spotify 登录',
-    login_hint:       '需要 Spotify Premium / Free 账号',
-    btn_open_config:  '⚙️ 配置',
+    login_sub: '实时同步歌词，跟随音乐律动',
+    btn_login_spotify: '使用 Spotify 登录',
+    login_hint: '需要 Spotify Premium / Free 账号',
+    btn_open_config: '⚙️ 配置',
 
     /* ── Configuration form ──── */
-    config_title:     'App Configuration',
-    config_sub:       '请填写 Spotify 开发者凭证以完成初始化配置。',
-    lbl_client_id:    'Client ID',
-    lbl_client_secret:'Client Secret',
+    config_title: '应用配置 (BYOK)',
+    config_sub_byok_1: 'Spotify 限制开发者接口额度。请前往 ',
+    config_sub_byok_2: ' 免费创建一个 App，并获取您专属的 Client ID 以解锁本地听歌权限。不填此项将无法登录。',
+    lbl_client_id: 'Client ID',
+    lbl_client_secret: 'Client Secret',
     lbl_redirect_uri: 'Redirect URI',
-    btn_cancel:       '取消',
-    btn_save_login:   '保存并登录',
+    btn_cancel: '返回',
+    btn_save_login: '保存 API 密钥',
 
     /* ── Player topbar / User menu ─ */
-    btn_logout:       '退出账号',
-    menu_profile:     '用户资料',
-    menu_lang:        '中 / EN',
-    menu_shortcuts:   '键盘快捷键',
-    menu_about:       '关于 LyriSoul',
+    btn_logout: '退出账号',
+    menu_profile: '用户资料',
+    menu_lang: '中 / EN',
+    menu_shortcuts: '键盘快捷键',
+    menu_about: '关于 LyriSoul',
 
     /* ── Lyrics panel ────────── */
-    title_lyrics:     '歌 词',
-    idle_waiting:     '正在等待音乐播放…',
-    no_lyrics:        '未找到该歌曲的歌词',
-    lrc_synced:       '同步歌词',
-    lrc_plain:        '文本歌词',
+    title_lyrics: '歌 词',
+    idle_waiting: '正在等待音乐播放…',
+    no_lyrics: '未找到该歌曲的歌词',
+    lrc_synced: '同步歌词',
+    lrc_plain: '文本歌词',
 
     /* ── Nothing-playing overlay */
-    np_title:         '当前没有音乐播放',
-    np_hint:          '打开 Spotify 开始播放吧',
+    np_title: '当前没有音乐播放',
+    np_hint: '打开 Spotify 开始播放吧',
 
     /* ── Player controls ──────── */
     btn_shuffle_title: '随机播放',
-    btn_prev_title:    '上一首',
+    btn_prev_title: '上一首',
     btn_play_pause_title: '播放 / 暂停',
-    btn_next_title:    '下一首',
-    btn_repeat_title:  '循环模式',
+    btn_next_title: '下一首',
+    btn_repeat_title: '循环模式',
     btn_open_config_title: '配置 API',
     btn_lang_toggle_title: '切换语言',
     cfg_client_id_placeholder: '例如: 1a2b3c4d5e...',
 
     /* ── Share modal ─────────── */
-    share_title:      '分享歌词卡片',
-    share_btn_dl:     '下载卡片',
-    btn_share_tooltip:'分享歌词卡片',
+    share_title: '分享歌词卡片',
+    share_btn_dl: '下载卡片',
+    btn_share_tooltip: '分享歌词卡片',
 
     /* ── Dynamic JS strings ──── */
-    msg_scroll_hint:  '手动浏览中，2 秒后自动回到当前歌词',
-    msg_req_client_id:'请填写 Client ID',
-    msg_saving:       '保存中…',
-    msg_save_fail:    '无法保存配置，请稍后再试。',
+    msg_scroll_hint: '手动浏览中，2 秒后自动回到当前歌词',
+    msg_req_client_id: '请填写 Client ID',
+    msg_saving: '保存中…',
+    msg_save_fail: '无法保存配置，请稍后再试。',
   }
 };
 
 // ─── State ────────────────────────────────────────────────
 let _lang = localStorage.getItem('lyrica_lang') ||
-            (navigator.language.startsWith('zh') ? 'zh' : 'en');
+  (navigator.language.startsWith('zh') ? 'zh' : 'en');
 
 // ─── Core helpers ─────────────────────────────────────────
 function t(key) {
@@ -184,7 +186,7 @@ function setLang(lang) {
   _lang = lang;
   localStorage.setItem('lyrica_lang', lang);
   applyTranslations();
-  
+
   if (window.pywebview && window.pywebview.api && window.pywebview.api.set_language) {
     window.pywebview.api.set_language(lang);
   }

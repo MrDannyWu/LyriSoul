@@ -12,9 +12,9 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;600;700;800&display=swap"
     rel="stylesheet" />
   <link rel="icon" type="image/png" href="/static/icon.png" />
-  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="stylesheet" href="/static/style.css?v=0326.1545" />
   <!-- i18n must load before app.js -->
-  <script src="/static/i18n.js"></script>
+  <script src="/static/i18n.js?v=0326.1545"></script>
 </head>
 
 <body>
@@ -36,19 +36,20 @@
       <div id="login-content">
         <div class="app-logo">
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-          <circle cx="24" cy="24" r="24" fill="url(#grad-badge)"></circle>
-          <g transform="translate(0, 3)">
-            <path d="M14 30 Q18 16 24 20 Q30 24 34 12" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"></path>
-            <circle cx="20" cy="26" r="2" fill="white" opacity="0.8"></circle>
-            <circle cx="28" cy="14" r="2" fill="white" opacity="0.8"></circle>
-          </g>
-          <defs>
-            <linearGradient id="grad-badge" x1="0" y1="0" x2="48" y2="48">
-              <stop offset="0%" stop-color="#1DB954"></stop>
-              <stop offset="100%" stop-color="#0d7a35"></stop>
-            </linearGradient>
-          </defs>
-        </svg>
+            <circle cx="24" cy="24" r="24" fill="url(#grad-badge)"></circle>
+            <g transform="translate(0, 3)">
+              <path d="M14 30 Q18 16 24 20 Q30 24 34 12" stroke="white" stroke-width="2.5" stroke-linecap="round"
+                fill="none"></path>
+              <circle cx="20" cy="26" r="2" fill="white" opacity="0.8"></circle>
+              <circle cx="28" cy="14" r="2" fill="white" opacity="0.8"></circle>
+            </g>
+            <defs>
+              <linearGradient id="grad-badge" x1="0" y1="0" x2="48" y2="48">
+                <stop offset="0%" stop-color="#1DB954"></stop>
+                <stop offset="100%" stop-color="#0d7a35"></stop>
+              </linearGradient>
+            </defs>
+          </svg>
         </div>
         <h1 class="login-title">LyriSoul</h1>
         <p class="login-sub" data-i18n="login_sub">实时同步歌词，跟随音乐律动</p>
@@ -59,20 +60,22 @@
           </svg>
           <span data-i18n="btn_login_spotify">使用 Spotify 登录</span>
         </a>
-        <button id="btn-open-config" class="btn-icon-tiny" data-i18n-title="btn_open_config_title"
-          title="Configure API">
-          <span data-i18n="btn_open_config">⚙️ 配置 API</span>
-        </button>
+
+        <div class="login-config-split">
+          <button id="btn-open-config" class="btn-icon-tiny" data-i18n-title="btn_open_config_title"
+            title="Configure API">
+            <span data-i18n="btn_open_config">⚙️ 配置 API</span>
+          </button>
+        </div>
       </div>
 
       <!-- CONFIGURATION VIEW (BYOK - Bring Your Own Key) -->
       <div id="config-content" class="hidden">
         <h2 class="config-title" data-i18n="config_title">应用配置 (BYOK)</h2>
-        <p class="config-sub" data-i18n="config_sub_byok"
-          style="font-size: 0.85rem; line-height: 1.4; color: rgba(255,255,255,0.7); margin-bottom: 20px;">
-          Spotify限制开发者接口额度。请前往 <a href="https://developer.spotify.com/dashboard" target="_blank"
-            style="color: #1DB954; text-decoration: underline;">Spotify Developer</a> 免费创建一个App，并获取您专属的 Client ID
-          以解锁本地听歌权限。不填此项将无法登录。
+        <p class="config-sub" style="font-size: 0.85rem; line-height: 1.4; color: rgba(255,255,255,0.7); margin-bottom: 20px;">
+          <span data-i18n="config_sub_byok_1">Spotify限制开发者接口额度。请前往 </span>
+          <a href="https://developer.spotify.com/dashboard" target="_blank" style="color: #1DB954; text-decoration: underline;">Spotify Developer</a>
+          <span data-i18n="config_sub_byok_2"> 免费创建一个App，并获取您专属的 Client ID 以解锁本地听歌权限。不填此项将无法登录。</span>
         </p>
 
         <div class="form-group">
@@ -101,19 +104,20 @@
       <div class="topbar-left">
         <div class="app-badge">
           <svg width="30" height="30" viewBox="0 0 48 48" fill="none">
-          <circle cx="24" cy="24" r="24" fill="url(#grad-badge)"></circle>
-          <g transform="translate(0, 3)">
-            <path d="M14 30 Q18 16 24 20 Q30 24 34 12" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"></path>
-            <circle cx="20" cy="26" r="2" fill="white" opacity="0.8"></circle>
-            <circle cx="28" cy="14" r="2" fill="white" opacity="0.8"></circle>
-          </g>
-          <defs>
-            <linearGradient id="grad-badge" x1="0" y1="0" x2="48" y2="48">
-              <stop offset="0%" stop-color="#1DB954"></stop>
-              <stop offset="100%" stop-color="#0d7a35"></stop>
-            </linearGradient>
-          </defs>
-        </svg>
+            <circle cx="24" cy="24" r="24" fill="url(#grad-badge)"></circle>
+            <g transform="translate(0, 3)">
+              <path d="M14 30 Q18 16 24 20 Q30 24 34 12" stroke="white" stroke-width="2.5" stroke-linecap="round"
+                fill="none"></path>
+              <circle cx="20" cy="26" r="2" fill="white" opacity="0.8"></circle>
+              <circle cx="28" cy="14" r="2" fill="white" opacity="0.8"></circle>
+            </g>
+            <defs>
+              <linearGradient id="grad-badge" x1="0" y1="0" x2="48" y2="48">
+                <stop offset="0%" stop-color="#1DB954"></stop>
+                <stop offset="100%" stop-color="#0d7a35"></stop>
+              </linearGradient>
+            </defs>
+          </svg>
           LyriSoul
         </div>
       </div>
@@ -139,24 +143,36 @@
             </div>
 
             <button class="user-dropdown-item" id="dd-profile" role="menuitem">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path
+                  d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
+              </svg>
               <span data-i18n="menu_profile">用户资料</span>
             </button>
 
 
             <button class="user-dropdown-item" id="dd-lang" role="menuitem">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path
+                  d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z" />
+              </svg>
               <span id="dd-lang-label" data-i18n="menu_lang">中 / EN</span>
             </button>
 
             <button class="user-dropdown-item" id="dd-about" role="menuitem">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+              </svg>
               <span data-i18n="menu_about">关于 LyriSoul</span>
             </button>
 
 
-            <a href="/auth/logout" class="user-dropdown-item user-dropdown-logout" role="menuitem" id="dd-logout">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+            <a href="javascript:void(0)" class="user-dropdown-item user-dropdown-logout" role="menuitem" id="dd-logout">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path
+                  d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
+              </svg>
               <span data-i18n="btn_logout">退出账号</span>
             </a>
           </div>
@@ -189,7 +205,7 @@
           <button class="control-btn" id="btn-shuffle" data-i18n-title="btn_shuffle_title" title="Shuffle">
             <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
               <path
-                d="M13.151.922a.75.75 0 1 0-1.06 1.06L13.109 3H11.16a3.75 3.75 0 0 0-2.873 1.34l-6.173 7.356A2.25 2.25 0 0 1 .39 12.5H0V14h.391a3.75 3.75 0 0 0 2.873-1.34l6.173-7.356a2.25 2.25 0 0 1 1.724-.804h1.947l-1.017 1.018a.75.75 0 0 0 1.06 1.06L15.98 3.75 13.15.922zM.391 3.5H0V2h.391c1.109 0 2.16.49 2.873 1.34L4.89 5.277l-.979 1.167-1.796-2.14A2.25 2.25 0 0 0 .39 3.5z" />
+                d="M13.151.922a.75.75 0 1 0-1.06 1.06L13.109 3H11.16a3.75 3.75 0 0 0-2.873 1.34l-6.173 7.356A2.25 2.25 0 1 1 .39 12.5H0V14h.391a3.75 3.75 0 0 0 2.873-1.34l6.173-7.356a2.25 2.25 0 0 1 1.724-.804h1.947l-1.017 1.018a.75.75 0 0 0 1.06 1.06L15.98 3.75 13.15.922zM.391 3.5H0V2h.391c1.109 0 2.16.49 2.873 1.34L4.89 5.277l-.979 1.167-1.796-2.14A2.25 2.25 0 0 0 .39 3.5z" />
               <path
                 d="m7.5 10.723.98-1.167 1.795 2.14A2.25 2.25 0 0 0 11.996 12.5h1.95l-1.018-1.018a.75.75 0 1 1 1.06-1.06l2.829 2.828-2.829 2.828a.75.75 0 1 1-1.06-1.06L13.948 14H11.996a3.75 3.75 0 0 1-2.873-1.34l-1.623-1.937z" />
             </svg>
@@ -314,7 +330,7 @@
     </div>
   </div>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=0326.1545"></script>
 </body>
 
 </html>

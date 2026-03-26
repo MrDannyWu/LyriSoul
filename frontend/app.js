@@ -19,14 +19,35 @@ let state = {
   progressMs: 0,
   durationMs: 0,
   lastFetchTime: 0,
-  _fetchPerfMark: 0,    // ← initialized so estimateProgressMs() doesn't return NaN
-  syncedLyrics: [],   // [{ time_ms, text }] sorted ascending
+  _fetchPerfMark: 0,
+  syncedLyrics: [],
   plainLyrics: null,
   activeLineIdx: -1,
   pollTimer: null,
   rafId: null,
   isDragging: false,
 };
+
+function resetState() {
+  stopAll();
+  state.isPlaying = false;
+  state.trackId = null;
+  state.progressMs = 0;
+  state.durationMs = 0;
+  state.syncedLyrics = [];
+  state.plainLyrics = null;
+  state.activeLineIdx = -1;
+  // Clear the UI
+  trackNameEl.textContent = '';
+  artistNameEl.textContent = '';
+  albumArt.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  bgAlbumArt.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  lyricsList.innerHTML = '';
+  lyricsIdle.style.display = 'flex';
+  progressBarFill.style.width = '0%';
+  timeCurrent.textContent = '0:00';
+  timeTotal.textContent = '0:00';
+}
 // Debug: print key state every 8s so you can open DevTools Console to diagnose issues
 setInterval(() => {
   console.debug('[LyriSoul] state:', {
@@ -89,7 +110,7 @@ const lyricsList = $('lyrics-list');
 const lyricsIdle = $('lyrics-idle');
 const lyricsContainer = $('lyrics-container');
 const nothingPlaying = $('nothing-playing');
-const userNameEl = $('user-name');
+const userNameEl = $('dd-user-name');
 const lyricsSource = $('lyrics-source');
 
 // State flags for optimistic updates
@@ -387,8 +408,15 @@ function updateTrack(data) {
 async function fetchCurrentTrack() {
   try {
     const res = await fetch(`${API_BASE}/api/current-track`, { credentials: 'include' });
+
+    // Auth Check: If session expired on server, trigger clean logout
+    if (res.status === 401) {
+      console.warn('Session expired (401). Redirecting to login.');
+      handleLogout();
+      return;
+    }
+
     if (res.status === 204) { showNothingPlaying(); return; }
-    if (res.status === 401) { showLogin(); return; }
     if (!res.ok) { console.warn('API', res.status); return; }
     hideNothingPlaying();
     const data = await res.json();
@@ -531,9 +559,15 @@ function showLogin() {
 }
 
 function showPlayer(user) {
-  loginScreen.classList.remove('active');
-  playerScreen.classList.add('active');
-  if (user?.display_name) userNameEl.textContent = user.display_name;
+  try {
+    loginScreen.classList.remove('active');
+    playerScreen.classList.add('active');
+    if (user?.display_name && userNameEl) {
+      userNameEl.textContent = user.display_name;
+    }
+  } catch (e) {
+    console.error('showPlayer error:', e);
+  }
   startAll();
 }
 
@@ -555,17 +589,18 @@ function stopAll() {
 
 async function handleLogout(e) {
   if (e) e.preventDefault();
-  stopAll();
+  // Immediate UI Feedback
+  resetState();
+  showLogin();
+  loginContent.classList.remove('hidden');
+  configContent.classList.add('hidden');
+
   try {
+    // Backend session destruction (POST)
     await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
   } catch (err) {
     console.error('Logout failed:', err);
   }
-  // Clear the UI and revert to the login screen
-  showLogin();
-  // Ensure the config panel is hidden and login button is shown
-  loginContent.classList.remove('hidden');
-  configContent.classList.add('hidden');
 }
 
 /* ── Share Card Generator ────────────────────────────────────────── */
@@ -877,7 +912,8 @@ async function init() {
 
   if (!cfg.is_configured) {
     showLogin();
-    loginContent.classList.add('hidden');
+    // We keep loginContent visible (unconfigured state) but show config below it
+    loginContent.classList.remove('hidden');
     configContent.classList.remove('hidden');
     if (btnCancelConfig) btnCancelConfig.style.display = 'none'; // Can't cancel if not configured
   } else {
@@ -888,6 +924,22 @@ async function init() {
       // Ensure login panel is visible if configured but not logged in
       loginContent.classList.remove('hidden');
       configContent.classList.add('hidden');
+
+      // ── External Auth Polling ──
+      // If the user logs in via an external browser, this interval will detect it 
+      // and automatically transition the app to the player screen.
+      const authPollInterval = setInterval(async () => {
+        // Only poll if the login screen is still active and the user hasn't opened config
+        if (loginScreen.classList.contains('active') && !loginContent.classList.contains('hidden')) {
+          const status = await checkAuthStatus();
+          if (status.logged_in) {
+            clearInterval(authPollInterval);
+            showPlayer(status);
+          }
+        } else if (!loginScreen.classList.contains('active')) {
+          clearInterval(authPollInterval);
+        }
+      }, 5000);
     }
   }
 
@@ -896,13 +948,21 @@ async function init() {
 
   // Config Events
   if (btnOpenConfig) btnOpenConfig.addEventListener('click', () => {
-    loginContent.classList.add('hidden');
+    // We no longer hide loginContent; instead we just show configContent below it
     configContent.classList.remove('hidden');
     if (btnCancelConfig) btnCancelConfig.style.display = 'inline-flex';
+
+    // Proactively apply translations to the newly visible config form
+    if (window.i18n) window.i18n.applyTranslations();
+
+    // Smooth scroll to ensure config is visible
+    setTimeout(() => {
+      configContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   });
   if (btnCancelConfig) btnCancelConfig.addEventListener('click', () => {
     configContent.classList.add('hidden');
-    loginContent.classList.remove('hidden');
+    // loginContent is already visible
   });
   if (btnSaveConfig) btnSaveConfig.addEventListener('click', saveConfig);
 
@@ -1161,6 +1221,8 @@ async function initUserMenu() {
     closeMenu();
     showToast('LyriSoul v1.0 — Spotify Lyrics Player ✨', 3000);
   });
+
+  document.getElementById('dd-logout')?.addEventListener('click', handleLogout);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
