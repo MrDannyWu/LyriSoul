@@ -91,7 +91,7 @@ pip install -r requirements.txt
 uvicorn main:app --reload --port 666
 ```
 
-### 3. 网页初始化配置
+### 3. 网页初始化配置 
 1. 在浏览器打开：[http://127.0.0.1:666](http://127.0.0.1:666)
 2. 您会直接看到一个炫酷的 **「App Configuration」** 表单。
 3. 将第一步中获得的 `Client ID` 和 `Client Secret` 直接粘贴进去并点击「Save & Login」。系统会自动生成 `.env` 并在后台热加载！您已经被成功绑定，接下来即可享受极致的同步歌词体验。
