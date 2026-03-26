@@ -11,6 +11,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;600;700;800&display=swap"
     rel="stylesheet" />
+  <link rel="icon" type="image/png" href="/static/icon.png" />
   <link rel="stylesheet" href="/static/style.css" />
   <!-- i18n must load before app.js -->
   <script src="/static/i18n.js"></script>
@@ -35,18 +36,19 @@
       <div id="login-content">
         <div class="app-logo">
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <circle cx="24" cy="24" r="24" fill="url(#grad)" />
-            <path d="M14 30 Q18 16 24 20 Q30 24 34 12" stroke="white" stroke-width="2.5" stroke-linecap="round"
-              fill="none" />
-            <circle cx="19" cy="26" r="2" fill="white" opacity="0.8" />
-            <circle cx="29" cy="22" r="2" fill="white" opacity="0.8" />
-            <defs>
-              <linearGradient id="grad" x1="0" y1="0" x2="48" y2="48">
-                <stop offset="0%" stop-color="#1DB954" />
-                <stop offset="100%" stop-color="#0d7a35" />
-              </linearGradient>
-            </defs>
-          </svg>
+          <circle cx="24" cy="24" r="24" fill="url(#grad-badge)"></circle>
+          <g transform="translate(0, 3)">
+            <path d="M14 30 Q18 16 24 20 Q30 24 34 12" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"></path>
+            <circle cx="20" cy="26" r="2" fill="white" opacity="0.8"></circle>
+            <circle cx="28" cy="14" r="2" fill="white" opacity="0.8"></circle>
+          </g>
+          <defs>
+            <linearGradient id="grad-badge" x1="0" y1="0" x2="48" y2="48">
+              <stop offset="0%" stop-color="#1DB954"></stop>
+              <stop offset="100%" stop-color="#0d7a35"></stop>
+            </linearGradient>
+          </defs>
+        </svg>
         </div>
         <h1 class="login-title">LyriSoul</h1>
         <p class="login-sub" data-i18n="login_sub">实时同步歌词，跟随音乐律动</p>
@@ -98,7 +100,20 @@
     <header class="topbar glass-subtle">
       <div class="topbar-left">
         <div class="app-badge">
-          <span class="dot-green"></span>
+          <svg width="30" height="30" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="24" fill="url(#grad-badge)"></circle>
+          <g transform="translate(0, 3)">
+            <path d="M14 30 Q18 16 24 20 Q30 24 34 12" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"></path>
+            <circle cx="20" cy="26" r="2" fill="white" opacity="0.8"></circle>
+            <circle cx="28" cy="14" r="2" fill="white" opacity="0.8"></circle>
+          </g>
+          <defs>
+            <linearGradient id="grad-badge" x1="0" y1="0" x2="48" y2="48">
+              <stop offset="0%" stop-color="#1DB954"></stop>
+              <stop offset="100%" stop-color="#0d7a35"></stop>
+            </linearGradient>
+          </defs>
+        </svg>
           LyriSoul
         </div>
       </div>
@@ -136,7 +151,7 @@
 
             <button class="user-dropdown-item" id="dd-about" role="menuitem">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-              <span data-i18n="menu_about">关于 Lyrica</span>
+              <span data-i18n="menu_about">关于 LyriSoul</span>
             </button>
 
 

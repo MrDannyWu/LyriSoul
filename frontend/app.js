@@ -1,5 +1,5 @@
 /**
- * app.js — Lyrica Frontend
+ * app.js — LyriSoul Frontend
  * ─────────────────────────
  * Sync engine: requestAnimationFrame loop for buttery-smooth lyrics tracking.
  * Highlights the current lyric line, auto-scrolls it to the viewport centre,
@@ -29,7 +29,7 @@ let state = {
 };
 // Debug: print key state every 8s so you can open DevTools Console to diagnose issues
 setInterval(() => {
-  console.debug('[Lyrica] state:', {
+  console.debug('[LyriSoul] state:', {
     isPlaying: state.isPlaying,
     progressMs: state.progressMs,
     estimatedMs: estimateProgressMs(),
@@ -393,7 +393,7 @@ async function fetchCurrentTrack() {
     hideNothingPlaying();
     const data = await res.json();
     // Debug: log key fields so you can diagnose lyrics/scrolling issues in DevTools Console
-    console.debug('[Lyrica] track poll:', {
+    console.debug('[LyriSoul] track poll:', {
       id: data.track?.id?.slice(0, 8),
       is_playing: data.track?.is_playing,
       progress_ms: data.track?.progress_ms,
@@ -845,10 +845,10 @@ async function generateShareCard(idx) {
   ctx.font = '400 22px "Inter", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.55)';
   ctx.fillText(ar + (artistNameEl.textContent?.length > 32 ? '…' : ''), tx2, barY + 76);
 
-  // Lyrica watermark + small icon
+  // LyriSoul watermark + small icon
   ctx.textAlign = 'right'; ctx.font = '300 20px "Inter", sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.2)';
-  ctx.fillText('Lyrica ♪', W - 56, barY + 60);
+  ctx.fillText('LyriSoul ♪', W - 56, barY + 60);
 }
 
 async function openShareCard() {
@@ -1065,15 +1065,15 @@ async function init() {
 
 /* ── User Avatar Menu ───────────────────────────────────────────── */
 async function initUserMenu() {
-  const wrap      = document.getElementById('user-menu-wrap');
-  const btn       = document.getElementById('user-avatar-btn');
-  const imgEl     = document.getElementById('user-avatar-img');
-  const initials  = document.getElementById('user-avatar-initials');
-  const tooltip   = document.getElementById('user-avatar-tooltip');
-  const dropdown  = document.getElementById('user-dropdown');
-  const ddImg     = document.getElementById('dd-avatar-img');
-  const ddInit    = document.getElementById('dd-avatar-initials');
-  const ddName    = document.getElementById('dd-user-name');
+  const wrap = document.getElementById('user-menu-wrap');
+  const btn = document.getElementById('user-avatar-btn');
+  const imgEl = document.getElementById('user-avatar-img');
+  const initials = document.getElementById('user-avatar-initials');
+  const tooltip = document.getElementById('user-avatar-tooltip');
+  const dropdown = document.getElementById('user-dropdown');
+  const ddImg = document.getElementById('dd-avatar-img');
+  const ddInit = document.getElementById('dd-avatar-initials');
+  const ddName = document.getElementById('dd-user-name');
   const ddFollowers = document.getElementById('dd-user-followers');
 
   if (!wrap || !btn) return;
@@ -1169,3 +1169,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initUserMenu();
 });
 
+// Push initial language state to Windows Native Tray API on Boot
+window.addEventListener('pywebviewready', () => {
+  if (window.pywebview && window.pywebview.api && window.pywebview.api.set_language) {
+    window.pywebview.api.set_language(window.i18n.getCurrent());
+  }
+});

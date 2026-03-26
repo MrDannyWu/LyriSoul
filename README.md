@@ -1,7 +1,7 @@
-# Lyrica — Spotify Lyrics App 🎵
+# LyriSoul — Spotify Lyrics App 🎵
 
-Lyrica 是一个基于 **FastAPI (Python)** 和 **Vanilla JS** 构建的全栈 Web 应用程序。它能够与您当前的 Spotify 播放状态实时同步，利用多级智能匹配引擎抓取歌词，并提供令人惊艳的、具玻璃拟物和发光特效的动态 UI 体验。
-~~除了功能强大的播放器本体，Lyrica 还有一个独立的官方独立宣传网页（Standalone Landing Page）。~~
+LyriSoul 是一个基于 **FastAPI (Python)** 和 **Vanilla JS** 构建的全栈 Web 应用程序。它能够与您当前的 Spotify 播放状态实时同步，利用多级智能匹配引擎抓取歌词，并提供令人惊艳的、具玻璃拟物和发光特效的动态 UI 体验。
+~~除了功能强大的播放器本体，LyriSoul 还有一个独立的官方独立宣传网页（Standalone Landing Page）。~~
 
 ---
 
@@ -10,7 +10,7 @@ Lyrica 是一个基于 **FastAPI (Python)** 和 **Vanilla JS** 构建的全栈 W
 - **🟢 Spotify 实时无缝同步**  
   无缝连接您的 Spotify Premium/Free 账号，实时追踪当前正在播放的曲目、进度及播放状态。
 - **🎤 瀑布式智能歌词引擎 (多源兜底)**  
-  我们在其后配置了多歌词源作为多级兜底。这使得 Lyrica 能够毫秒级找齐不仅限于欧美热门，更涵盖了**华语流行、独立音乐、Live 版及纯音乐**的精准滚动时间轴歌词。
+  我们在其后配置了多歌词源作为多级兜底。这使得 LyriSoul 能够毫秒级找齐不仅限于欧美热门，更涵盖了**华语流行、独立音乐、Live 版及纯音乐**的精准滚动时间轴歌词。
 - **📸 杂志风·歌词分享卡片 (Editorial Share Card)**  
   不依赖第三方生图服务，前端基于纯粹的 HTML5 Canvas 技术，动态生成带有高斯模糊专辑背景、左齐光晕文字、专属绿线点阵点缀和完整圆角的精美分享海报。支持通过横向 Chip 选择器任意调整要高亮的歌词金句，具备智能长文裁字及排版换行。
 - **🫧 极致 UI 体验 (Glassmorphism & 3D Parallax)**  
@@ -61,10 +61,10 @@ graph TD
 
 ## 🛠️ 项目结构与技术栈
 
-- **`lyrica/`**: 主播放层应用逻辑。
+- **`lyrisoul/`**: 主播放层应用逻辑。
   - **Backend**: Python 3.9+, [FastAPI](https://fastapi.tiangolo.com/), `spotipy`, `httpx` (异步并发网络), `pydantic`, `python-dotenv`。
   - **Frontend**: 采用 0 框架搭建 (`frontend/index.html`)，极简高性能的原生 JS 和 Vanilla CSS Variables，原生支持 Canvas API。
-~~- **`lyrica_website/`**: 附带的创意宣传官方网页，也是独立的静态项目。使用了原生 IntersectionObserver 实现滚动揭开（Scroll Reveal），以及 Bento Box 便当盒网格布局。~~
+~~- **`lyrisoul_website/`**: 附带的创意宣传官方网页，也是独立的静态项目。使用了原生 IntersectionObserver 实现滚动揭开（Scroll Reveal），以及 Bento Box 便当盒网格布局。~~
 
 ---
 
@@ -77,7 +77,7 @@ graph TD
 3. 取得 `Client ID` 和 `Client Secret`
 
 ### 2. 启动服务 (无需提前设置环境变量)
-克隆代码库并进入项目的主后端目录 `lyrica`。
+克隆代码库并进入项目的主后端目录 `lyrisoul`。
 
 ```bash
 # 激活虚拟环境 (可选)
@@ -115,5 +115,5 @@ uvicorn main:app --reload --port 666
 ![img_2.png](screenshots/img_2.png)
 ![img.png](screenshots/img.png)
 ![img_1.png](screenshots/img_1.png)
-![lyrica-天空之城.png](screenshots/lyrica-%E5%A4%A9%E7%A9%BA%E4%B9%8B%E5%9F%8E.png)
+![lyrisoul-天空之城.png](screenshots/lyrisoul-%E5%A4%A9%E7%A9%BA%E4%B9%8B%E5%9F%8E.png)
 > **Made out of ❤️ for music and code.**

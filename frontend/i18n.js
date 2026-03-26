@@ -1,5 +1,5 @@
 /**
- * i18n.js — Pure Frontend Internationalization for Lyrica
+ * i18n.js — Pure Frontend Internationalization for LyriSoul
  * ─────────────────────────────────────────────────────────
  * Usage:
  *   window.i18n.t('key')           → get current translation
@@ -184,6 +184,10 @@ function setLang(lang) {
   _lang = lang;
   localStorage.setItem('lyrica_lang', lang);
   applyTranslations();
+  
+  if (window.pywebview && window.pywebview.api && window.pywebview.api.set_language) {
+    window.pywebview.api.set_language(lang);
+  }
 }
 
 // ─── Toggle ───────────────────────────────────────────────
