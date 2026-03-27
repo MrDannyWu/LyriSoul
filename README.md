@@ -16,7 +16,7 @@ LyriSoul 是一个基于 **FastAPI (Python)** 和 **Vanilla JS** 构建的全栈
 - **🫧 极致 UI 体验 (Glassmorphism & 3D Parallax)**  
   深色模式，使用毛玻璃特效（Glassmorphism）搭建模块，背景随专辑封面动态渲染且有柔和律动的彩色 Blobs，随播放暂停平滑过渡。独立官网更是搭载了随着鼠标 3D 悬浮视差的精美控件与原生 CSS Marquee 跑马灯组件。
 - **⚙️ 傻瓜式动态配置 (Zero Manual Config)**  
-  极度小白友好的 Web 引导。首次使用**无需手动新建或修改 `.env` 环境变量文件**！直接启动应用，页面将自动弹出一个精美的玻璃态配置表单，在网页填入 `Client ID` 和 `Secret` 后即可热更新，立即开启音乐之旅。
+  极度小白友好的 Web 引导。首次使用**无需手动新建或修改 `.env` 环境变量文件**！直接启动应用，页面将自动弹出一个精美的玻璃态配置表单，在网页填入 `Client ID` 后即可热更新，立即开启音乐之旅。
 
 ---
 
@@ -74,7 +74,7 @@ graph TD
 前往 [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)：
 1. Create App (创建新应用)
 2. 设置 **Redirect URI** 为 `http://127.0.0.1:666/callback`
-3. 取得 `Client ID` 和 `Client Secret`
+3. 取得 `Client ID`
 
 ### 2. 启动服务 (无需提前设置环境变量)
 克隆代码库并进入项目的主后端目录 `lyrisoul`。
@@ -94,7 +94,7 @@ uvicorn main:app --reload --port 666
 ### 3. 网页初始化配置 
 1. 在浏览器打开：[http://127.0.0.1:666](http://127.0.0.1:666)
 2. 您会直接看到一个炫酷的 **「App Configuration」** 表单。
-3. 将第一步中获得的 `Client ID` 和 `Client Secret` 直接粘贴进去并点击「Save & Login」。系统会自动生成 `.env` 并在后台热加载！您已经被成功绑定，接下来即可享受极致的同步歌词体验。
+3. 将第一步中获得的 `Client ID` 直接粘贴进去并点击「Save & Login」。系统会自动生成 `.env` 并在后台热加载！您已经被成功绑定，接下来即可享受极致的同步歌词体验。
 
 ---
 

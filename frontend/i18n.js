@@ -30,7 +30,7 @@ const _translations = {
     lbl_client_secret: 'Client Secret',
     lbl_redirect_uri: 'Redirect URI',
     btn_cancel: 'Back',
-    btn_save_login: 'Save API Key',
+    btn_save_login: 'Save Client ID',
 
     /* ── Player topbar / User menu ─ */
     btn_logout: 'Logout',
@@ -87,7 +87,7 @@ const _translations = {
     lbl_client_secret: 'Client Secret',
     lbl_redirect_uri: 'Redirect URI',
     btn_cancel: '返回',
-    btn_save_login: '保存 API 密钥',
+    btn_save_login: '保存 Client ID',
 
     /* ── Player topbar / User menu ─ */
     btn_logout: '退出账号',
