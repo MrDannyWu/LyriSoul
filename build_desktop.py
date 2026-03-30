@@ -68,6 +68,7 @@ class NativeApi:
             self._window.destroy()
             os._exit(0)
 
+
     def _get_hwnd(self):
         if hasattr(self, '_hwnd_cache') and self._hwnd_cache and ctypes.windll.user32.IsWindow(self._hwnd_cache):
             return self._hwnd_cache
@@ -101,6 +102,10 @@ class NativeApi:
     def resize_window(self, width, height):
         if self._window:
             self._window.resize(int(width), int(height))
+
+    def open_external_auth(self):
+        import webbrowser
+        webbrowser.open("http://127.0.0.1:666/auth/login?desktop=1")
 
 
     def start_resize(self, edge):

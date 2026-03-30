@@ -473,7 +473,13 @@ async function saveConfig() {
     });
     const data = await res.json();
     if (data.is_configured) {
-      window.location.href = '/auth/login';
+      showToast(window.i18n ? window.i18n.t('msg_save_success') : 'Client ID saved! Click Login with Spotify.', 'success');
+      // Restore button state
+      if (oldI18n) btnSaveConfig.setAttribute('data-i18n', oldI18n);
+      else btnSaveConfig.removeAttribute('data-i18n');
+      btnSaveConfig.textContent = oldTxt;
+      // Close the config drawer
+      configContent.classList.add('hidden');
     }
   } catch (err) {
     console.error("Config save failed:", err);
@@ -562,8 +568,32 @@ function showPlayer(user) {
   try {
     loginScreen.classList.remove('active');
     playerScreen.classList.add('active');
-    if (user?.display_name && userNameEl) {
-      userNameEl.textContent = user.display_name;
+    
+    // UI Profile Binding
+    if (user) {
+      const name = user.display_name || 'User';
+      const initial = name.charAt(0).toUpperCase();
+
+      const userAvatarImg = document.getElementById('user-avatar-img');
+      const userAvatarInit = document.getElementById('user-avatar-initials');
+      const ddAvatarImg = document.getElementById('dd-avatar-img');
+      const ddAvatarInit = document.getElementById('dd-avatar-initials');
+      const ddUserName = document.getElementById('dd-user-name');
+
+      if (ddUserName) ddUserName.textContent = name;
+      if (typeof userNameEl !== 'undefined' && userNameEl) userNameEl.textContent = name;
+
+      if (user.avatar_url) {
+        if (userAvatarImg) { userAvatarImg.src = user.avatar_url; userAvatarImg.classList.remove('hidden'); }
+        if (userAvatarInit) userAvatarInit.classList.add('hidden');
+        if (ddAvatarImg) { ddAvatarImg.src = user.avatar_url; ddAvatarImg.classList.remove('hidden'); }
+        if (ddAvatarInit) ddAvatarInit.classList.add('hidden');
+      } else {
+        if (userAvatarImg) userAvatarImg.classList.add('hidden');
+        if (userAvatarInit) { userAvatarInit.textContent = initial; userAvatarInit.classList.remove('hidden'); }
+        if (ddAvatarImg) ddAvatarImg.classList.add('hidden');
+        if (ddAvatarInit) { ddAvatarInit.textContent = initial; ddAvatarInit.classList.remove('hidden'); }
+      }
     }
   } catch (e) {
     console.error('showPlayer error:', e);
@@ -906,6 +936,23 @@ function downloadCard() {
 
 
 /* ── Init ───────────────────────────────────────────────────────── */
+let authPollInterval = null;
+
+function startAuthPolling() {
+  if (authPollInterval) clearInterval(authPollInterval);
+  authPollInterval = setInterval(async () => {
+    if (loginScreen.classList.contains('active') && !loginContent.classList.contains('hidden')) {
+      const status = await checkAuthStatus();
+      if (status.logged_in) {
+        clearInterval(authPollInterval);
+        showPlayer(status);
+      }
+    } else if (!loginScreen.classList.contains('active')) {
+      clearInterval(authPollInterval);
+    }
+  }, 2000); // 2-second aggressive polling for instant desktop return
+}
+
 async function init() {
   const cfg = await checkConfigStatus();
   if (cfg.redirect_uri && cfgRedirectUri) cfgRedirectUri.value = cfg.redirect_uri;
@@ -916,6 +963,7 @@ async function init() {
     loginContent.classList.remove('hidden');
     configContent.classList.remove('hidden');
     if (btnCancelConfig) btnCancelConfig.style.display = 'none'; // Can't cancel if not configured
+    startAuthPolling(); // CRITICAL FIX: Ensure polling runs even if they just configured on this boot!
   } else {
     const auth = await checkAuthStatus();
     if (auth.logged_in) showPlayer(auth);
@@ -924,22 +972,7 @@ async function init() {
       // Ensure login panel is visible if configured but not logged in
       loginContent.classList.remove('hidden');
       configContent.classList.add('hidden');
-
-      // ── External Auth Polling ──
-      // If the user logs in via an external browser, this interval will detect it 
-      // and automatically transition the app to the player screen.
-      const authPollInterval = setInterval(async () => {
-        // Only poll if the login screen is still active and the user hasn't opened config
-        if (loginScreen.classList.contains('active') && !loginContent.classList.contains('hidden')) {
-          const status = await checkAuthStatus();
-          if (status.logged_in) {
-            clearInterval(authPollInterval);
-            showPlayer(status);
-          }
-        } else if (!loginScreen.classList.contains('active')) {
-          clearInterval(authPollInterval);
-        }
-      }, 5000);
+      startAuthPolling();
     }
   }
 
@@ -1001,26 +1034,11 @@ async function init() {
       topbar.addEventListener('mousedown', (e) => {
         if (e.buttons !== 1) return;
         // Do not drag if clicking a native window button or standard button
-        if (e.target.closest('button') || e.target.closest('.user-dropdown') || e.target.closest('.window-controls')) return;
+        if (e.target.closest('button') || e.target.closest('.user-dropdown')) return;
         if (api && api.start_window_drag) {
           e.preventDefault();
           api.start_window_drag();
         }
-      });
-    }
-
-    const btnMin = document.getElementById('win-min');
-    const btnClose = document.getElementById('win-close');
-    if (btnMin) {
-      btnMin.addEventListener('click', (e) => {
-        e.stopPropagation();
-        api.minimize_window();
-      });
-    }
-    if (btnClose) {
-      btnClose.addEventListener('click', (e) => {
-        e.stopPropagation();
-        api.close_window();
       });
     }
   });
@@ -1033,13 +1051,18 @@ async function init() {
       const cfg = await checkConfigStatus();
       if (!cfg.is_configured) {
         showToast(window.i18n ? window.i18n.t('msg_req_client_id') : 'Please configure your Spotify Client ID first!', 'error');
-        loginContent.classList.add('hidden');
+        loginContent.classList.remove('hidden');
         configContent.classList.remove('hidden');
       } else {
-        window.location.href = '/auth/login';
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.open_external_auth) {
+            window.pywebview.api.open_external_auth();
+        } else {
+            window.location.href = '/auth/login';
+        }
       }
     });
   }
+
 
   // Player Control Events
   if (btnPlayPause) btnPlayPause.addEventListener('click', togglePlayPause);

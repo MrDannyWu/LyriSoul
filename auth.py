@@ -132,7 +132,7 @@ def get_spotify_client(request: Request) -> spotipy.Spotify:
 # ─────────────────────────────────────────────────────────────────────────────
 
 @router.get("/login", summary="Redirect to Spotify login page")
-def login(request: Request):
+def login(request: Request, desktop: Optional[int] = 0):
     """
     Generate a Spotify authorisation URL and redirect the user to it.
     After authorising, Spotify redirects back to /auth/callback.
@@ -140,6 +140,8 @@ def login(request: Request):
     if not settings.spotify_client_id or len(settings.spotify_client_id.strip()) < 32:
         logger.warning("Attempted to login without a valid Client ID. Redirecting to frontend config.")
         return RedirectResponse(url="/")
+        
+    request.session["desktop_mode"] = desktop
 
     oauth = _get_oauth_manager()
     auth_url = oauth.get_authorize_url()
@@ -197,7 +199,7 @@ def callback(request: Request, code: Optional[str] = None, error: Optional[str] 
             raise Exception("No cached token found after exchange")
     except Exception as e:
         logger.error("Token exchange failed: %s", e)
-        raise HTTPException(status_code=500, detail="Failed to exchange authorization code")
+        raise HTTPException(status_code=500, detail=f"Failed to exchange authorization code: {str(e)}")
 
     # Save to session AND disk (persistent across restarts)
     request.session["token_info"] = token_info
@@ -214,7 +216,32 @@ def callback(request: Request, code: Optional[str] = None, error: Optional[str] 
 
     logger.info("User logged in: %s", user.get("display_name"))
 
-    # Redirect to the frontend SPA
+    is_desktop = request.session.pop("desktop_mode", 0)
+    if is_desktop:
+        try:
+            import ctypes
+            hwnd = ctypes.windll.user32.FindWindowW(None, "LyriSoul")
+            if hwnd:
+                if ctypes.windll.user32.IsIconic(hwnd):
+                    ctypes.windll.user32.ShowWindow(hwnd, 9) # SW_RESTORE
+                ctypes.windll.user32.SetForegroundWindow(hwnd)
+        except Exception as e:
+            logger.error("Failed to foreground desktop window: %s", e)
+
+        from fastapi.responses import HTMLResponse
+        return HTMLResponse("""
+        <!DOCTYPE html>
+        <html>
+        <head><title>LyriSoul Auth</title></head>
+        <body style="background:#080c14;color:#1DB954;font-family:sans-serif;text-align:center;padding-top:100px;">
+            <h2>Authentication Successful! 🚀</h2>
+            <p style="color:#fff">You may now close this browser window safely.</p>
+            <script>window.close();</script>
+        </body>
+        </html>
+        """)
+
+    # Redirect to the frontend SPA for web users
     return RedirectResponse(url="/")
 
 
