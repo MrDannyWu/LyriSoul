@@ -1034,13 +1034,15 @@ async function init() {
       topbar.addEventListener('mousedown', (e) => {
         if (e.buttons !== 1) return;
         // Do not drag if clicking a native window button or standard button
-        if (e.target.closest('button') || e.target.closest('.user-dropdown')) return;
+        if (e.target.closest('button') || e.target.closest('.user-dropdown') || e.target.closest('.mac-controls')) return;
         if (api && api.start_window_drag) {
           e.preventDefault();
           api.start_window_drag();
         }
       });
     }
+
+    // ── Window Control Buttons (Inline HTML Handlers applied) ──
   });
 
   // Intercept Login Button

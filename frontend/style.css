@@ -423,6 +423,71 @@ input,
   padding: 0 28px;
 }
 
+/* ── macOS Style Window Controls ─────────────────────────────────── */
+.topbar-left {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.mac-controls {
+  display: flex;
+  gap: 8px;
+  margin-right: 12px;
+  position: relative;
+  z-index: 99990;
+  /* Replaced ::before pseudo element with pure padding for massive hover hit-box */
+  padding: 20px 20px 20px 10px;
+  margin: -20px -20px -20px -24px; /* Shifted left by decreasing the left margin */
+  -webkit-app-region: no-drag; /* Forcibly decouple from DWM drag frame */
+}
+
+/* Remove pseudo element hijacking */
+.mac-controls::before {
+  display: none !important;
+}
+
+.mac-btn {
+  position: relative;
+  z-index: 99999;
+  pointer-events: auto !important;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.12);
+  transition: background 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.2s;
+  -webkit-app-region: no-drag;
+}
+
+.mac-btn:active, .mac-btn.clicked {
+  transform: scale(0.85) !important;
+  filter: brightness(0.8);
+}
+
+.mac-btn svg {
+  width: 8px;
+  height: 8px;
+  stroke: rgba(0, 0, 0, 0.65);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+/* Reveal colors and icons on hover over the controls area */
+.topbar-left:hover .mac-btn svg { opacity: 1; }
+
+.topbar-left:hover .mac-close { background: #ff5f56; }
+.topbar-left:hover .mac-close:hover { transform: scale(1.15); background: #ff5f56; }
+
+.topbar-left:hover .mac-min { background: #ffbd2e; }
+.topbar-left:hover .mac-min:hover { transform: scale(1.15); background: #ffbd2e; }
+
 .app-badge {
   display: flex;
   align-items: center;

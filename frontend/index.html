@@ -104,6 +104,15 @@
     <!-- Top bar -->
     <header class="topbar glass-subtle">
       <div class="topbar-left">
+        <!-- macOS-style hover controls -->
+        <div class="mac-controls" id="mac-controls">
+          <button class="mac-btn mac-close" id="mac-close" title="Close" onmousedown="event.stopPropagation(); const btn=this; btn.classList.add('clicked'); setTimeout(() => { if(window.pywebview && window.pywebview.api) window.pywebview.api.close_window(); btn.classList.remove('clicked'); }, 150);">
+            <svg viewBox="0 0 14 14"><line x1="4" y1="4" x2="10" y2="10"/><line x1="10" y1="4" x2="4" y2="10"/></svg>
+          </button>
+          <button class="mac-btn mac-min" id="mac-min" title="Minimize" onmousedown="event.stopPropagation(); const btn=this; btn.classList.add('clicked'); setTimeout(() => { if(window.pywebview && window.pywebview.api) window.pywebview.api.minimize_window(); btn.classList.remove('clicked'); }, 150);">
+            <svg viewBox="0 0 14 14"><line x1="3" y1="7" x2="11" y2="7"/></svg>
+          </button>
+        </div>
         <div class="app-badge">
           <svg width="30" height="30" viewBox="0 0 48 48" fill="none">
             <circle cx="24" cy="24" r="24" fill="url(#grad-badge)"></circle>

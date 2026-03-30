@@ -193,7 +193,6 @@ if __name__ == "__main__":
         height=800,
         frameless=True,
         transparent=True,
-        easy_drag=True,
         js_api=api
     )
     api.set_window(window)
