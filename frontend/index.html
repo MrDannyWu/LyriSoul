@@ -72,9 +72,11 @@
       <!-- CONFIGURATION VIEW (BYOK - Bring Your Own Key) -->
       <div id="config-content" class="hidden">
         <h2 class="config-title" data-i18n="config_title">应用配置 (BYOK)</h2>
-        <p class="config-sub" style="font-size: 0.85rem; line-height: 1.4; color: rgba(255,255,255,0.7); margin-bottom: 20px;">
+        <p class="config-sub"
+          style="font-size: 0.85rem; line-height: 1.4; color: rgba(255,255,255,0.7); margin-bottom: 20px;">
           <span data-i18n="config_sub_byok_1">Spotify限制开发者接口额度。请前往 </span>
-          <a href="https://developer.spotify.com/dashboard" target="_blank" style="color: #1DB954; text-decoration: underline;">Spotify Developer</a>
+          <a href="https://developer.spotify.com/dashboard" target="_blank"
+            style="color: #1DB954; text-decoration: underline;">Spotify Developer</a>
           <span data-i18n="config_sub_byok_2"> 免费创建一个App，并获取您专属的 Client ID 以解锁本地听歌权限。不填此项将无法登录。</span>
         </p>
 
@@ -122,6 +124,20 @@
         </div>
       </div>
       <div class="topbar-right">
+        <!-- Native Window Controls (visible in desktop frameless mode) -->
+        <div class="window-controls" id="window-controls">
+          <button class="win-btn win-min" id="win-min" title="Minimize">
+            <svg viewBox="0 0 14 14">
+              <line x1="2" y1="7" x2="12" y2="7" />
+            </svg>
+          </button>
+          <button class="win-btn win-close-btn" id="win-close" title="Close">
+            <svg viewBox="0 0 14 14">
+              <line x1="3" y1="3" x2="11" y2="11" />
+              <line x1="11" y1="3" x2="3" y2="11" />
+            </svg>
+          </button>
+        </div>
         <!-- User Avatar Button -->
         <div class="user-menu-wrap" id="user-menu-wrap">
           <button class="user-avatar-btn" id="user-avatar-btn" aria-label="User menu" aria-expanded="false">
@@ -329,8 +345,11 @@
       </div>
     </div>
   </div>
+  <!-- Resizer Handle -->
+  <div id="resizer"></div>
 
   <script src="/static/app.js?v=0326.1545"></script>
 </body>
+
 
 </html>

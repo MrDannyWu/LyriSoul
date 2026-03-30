@@ -971,44 +971,44 @@ async function init() {
     const api = window.pywebview && window.pywebview.api;
     if (!api) return;
 
-    // ── Edge Resize Detection ──
-    const B = 6; // border thickness in px
-    const cursors = {
-      't': 'n-resize', 'b': 's-resize', 'l': 'w-resize', 'r': 'e-resize',
-      'tl': 'nw-resize', 'tr': 'ne-resize', 'bl': 'sw-resize', 'br': 'se-resize'
-    };
-    const htValues = {
-      't': 12, 'b': 15, 'l': 10, 'r': 11,
-      'tl': 13, 'tr': 14, 'bl': 16, 'br': 17
-    };
-
-    function getEdge(e) {
-      const w = window.innerWidth, h = window.innerHeight;
-      const t = e.clientY < B, b = e.clientY > h - B;
-      const l = e.clientX < B, r = e.clientX > w - B;
-      if (t && l) return 'tl'; if (t && r) return 'tr';
-      if (b && l) return 'bl'; if (b && r) return 'br';
-      if (t) return 't'; if (b) return 'b';
-      if (l) return 'l'; if (r) return 'r';
-      return '';
-    }
-
-    document.addEventListener('mousemove', (e) => {
-      const edge = getEdge(e);
-      document.body.style.cursor = edge ? cursors[edge] : '';
-    });
-
-    document.addEventListener('mousedown', (e) => {
-      if (e.buttons !== 1) return;
-      const edge = getEdge(e);
-      if (edge) {
+    // ── Resizer Drag Logic ──
+    const resizer = document.getElementById('resizer');
+    let isResizing = false;
+    if (resizer) {
+      resizer.addEventListener('mousedown', (e) => {
+        if (e.buttons !== 1) return;
+        isResizing = true;
         e.preventDefault();
         e.stopPropagation();
-        api.start_resize(htValues[edge]);
-      }
-    }, true); // ← capture phase: runs BEFORE easy_drag
+      });
 
-    // ── Window Control Buttons ──
+      window.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        if (api && api.resize_window) {
+            // e.clientX and e.clientY map precisely to the new width and height
+            api.resize_window(Math.max(400, e.clientX), Math.max(300, e.clientY));
+        }
+      });
+
+      window.addEventListener('mouseup', () => {
+        isResizing = false;
+      });
+    }
+
+    // ── Window Control Buttons & Dragging ──
+    const topbar = document.querySelector('.topbar');
+    if (topbar) {
+      topbar.addEventListener('mousedown', (e) => {
+        if (e.buttons !== 1) return;
+        // Do not drag if clicking a native window button or standard button
+        if (e.target.closest('button') || e.target.closest('.user-dropdown') || e.target.closest('.window-controls')) return;
+        if (api && api.start_window_drag) {
+          e.preventDefault();
+          api.start_window_drag();
+        }
+      });
+    }
+
     const btnMin = document.getElementById('win-min');
     const btnClose = document.getElementById('win-close');
     if (btnMin) {

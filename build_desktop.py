@@ -23,39 +23,38 @@ import urllib.request
 import sys
 import os
 import ctypes
-import webbrowser
+import ctypes.wintypes
 
 def start_server(port):
     uvicorn.run(app, host="127.0.0.1", port=port, log_level="error")
 
-def apply_window_tweaks(window):
-    """Only apply DWM cosmetics — no window style changes, no subclassing."""
+def make_frameless_with_resize(window):
     time.sleep(0.5)
     hwnd = ctypes.windll.user32.FindWindowW(None, "LyriSoul")
     if not hwnd:
         return
-    dwmapi = ctypes.windll.dwmapi
-    # DWM dark mode
-    val = ctypes.c_int(1)
+
+    # ONLY apply DWM Cosmetics (Dark Mode and Rounded Corners)
+    # NO WS_THICKFRAME Hacks! This prevents the black top bar natively.
+    DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+    DWMWA_WINDOW_CORNER_PREFERENCE = 33
+    is_true = ctypes.c_int(1)
+    corner_pref = ctypes.c_int(2)
     try:
-        dwmapi.DwmSetWindowAttribute(hwnd, 20, ctypes.byref(val), ctypes.sizeof(val))
-    except Exception:
-        pass
-    # DWM rounded corners (Win11)
-    corner = ctypes.c_int(2)
-    try:
-        dwmapi.DwmSetWindowAttribute(hwnd, 33, ctypes.byref(corner), ctypes.sizeof(corner))
-    except Exception:
-        pass
+        ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ctypes.byref(is_true), ctypes.sizeof(is_true))
+        ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ctypes.byref(corner_pref), ctypes.sizeof(corner_pref))
+    except Exception: pass
+
 
 class NativeApi:
     def __init__(self):
         self._window = None
         self.lang = 'zh'
         self.tray_icon = None
-
+        
     def set_language(self, lang):
         self.lang = lang
+        # System tray menu is now strictly bound to Windows OS language natively.
 
     def set_window(self, w):
         self._window = w
@@ -69,18 +68,47 @@ class NativeApi:
             self._window.destroy()
             os._exit(0)
 
+    def _get_hwnd(self):
+        if hasattr(self, '_hwnd_cache') and self._hwnd_cache and ctypes.windll.user32.IsWindow(self._hwnd_cache):
+            return self._hwnd_cache
+            
+        hwnd = getattr(self._window, 'native', None)
+        if isinstance(hwnd, int) and ctypes.windll.user32.IsWindow(hwnd):
+            self._hwnd_cache = hwnd
+            return hwnd
+
+        def callback(handle, _):
+            nonlocal hwnd
+            length = ctypes.windll.user32.GetWindowTextLengthW(handle)
+            if length > 0:
+                buff = ctypes.create_unicode_buffer(length + 1)
+                ctypes.windll.user32.GetWindowTextW(handle, buff, length + 1)
+                if "LyriSoul" in buff.value:
+                    hwnd = handle
+                    return False
+            return True
+        
+        ctypes.windll.user32.EnumWindows(ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)(callback), 0)
+        self._hwnd_cache = hwnd
+        return hwnd
+
+    def start_window_drag(self):
+        hwnd = self._get_hwnd()
+        if hwnd:
+            ctypes.windll.user32.ReleaseCapture()
+            ctypes.windll.user32.SendMessageW(hwnd, 0xA1, 2, 0)
+
     def resize_window(self, width, height):
         if self._window:
             self._window.resize(int(width), int(height))
 
-    def get_window_size(self):
-        if self._window:
-            return {'width': self._window.width, 'height': self._window.height}
-        return {'width': 1280, 'height': 800}
 
-    def open_external_auth(self):
-        """Open the system browser to the auth login endpoint."""
-        webbrowser.open("http://127.0.0.1:666/auth/login")
+    def start_resize(self, edge):
+        hwnd = self._get_hwnd()
+        if hwnd:
+            ctypes.windll.user32.ReleaseCapture()
+            ctypes.windll.user32.SendMessageW(hwnd, 0xA1, int(edge), 0)
+
 
 def setup_tray(api):
     try:
@@ -159,8 +187,8 @@ if __name__ == "__main__":
         width=1280,
         height=800,
         frameless=True,
+        transparent=True,
         easy_drag=True,
-        resizable=True,
         js_api=api
     )
     api.set_window(window)
@@ -168,7 +196,7 @@ if __name__ == "__main__":
     # Initialize system tray exactly before pushing UI loop
     setup_tray(api)
     
-    webview.start(private_mode=False, func=apply_window_tweaks, args=[window])
+    webview.start(private_mode=False, func=make_frameless_with_resize, args=[window])
 '''.strip())
 
     try:
