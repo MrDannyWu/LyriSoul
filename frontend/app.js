@@ -333,7 +333,9 @@ function updateTrack(data) {
     // UI: track title & artist
     trackNameEl.textContent = track.name;
     trackNameEl.title = track.name;
-    artistNameEl.textContent = track.artists.map(a => a.name).join(', ');
+    const artistsStr = track.artists.map(a => a.name).join(', ');
+    artistNameEl.textContent = artistsStr;
+    artistNameEl.title = artistsStr;
 
     // Album art cross-fade
     if (track.album.cover_url) {
@@ -568,7 +570,7 @@ function showPlayer(user) {
   try {
     loginScreen.classList.remove('active');
     playerScreen.classList.add('active');
-    
+
     // UI Profile Binding
     if (user) {
       const name = user.display_name || 'User';
@@ -1018,8 +1020,8 @@ async function init() {
       window.addEventListener('mousemove', (e) => {
         if (!isResizing) return;
         if (api && api.resize_window) {
-            // e.clientX and e.clientY map precisely to the new width and height
-            api.resize_window(Math.max(400, e.clientX), Math.max(300, e.clientY));
+          // e.clientX and e.clientY map precisely to the new width and height
+          api.resize_window(Math.max(400, e.clientX), Math.max(300, e.clientY));
         }
       });
 
@@ -1057,9 +1059,9 @@ async function init() {
         configContent.classList.remove('hidden');
       } else {
         if (window.pywebview && window.pywebview.api && window.pywebview.api.open_external_auth) {
-            window.pywebview.api.open_external_auth();
+          window.pywebview.api.open_external_auth();
         } else {
-            window.location.href = '/auth/login';
+          window.location.href = '/auth/login';
         }
       }
     });
@@ -1261,4 +1263,40 @@ window.addEventListener('pywebviewready', () => {
   if (window.pywebview && window.pywebview.api && window.pywebview.api.set_language) {
     window.pywebview.api.set_language(window.i18n.getCurrent());
   }
+  
+  // Exclusively render native OS window controls on Desktop execution
+  const macControls = document.getElementById('mac-controls');
+  if (macControls) {
+      macControls.style.display = 'flex';
+  }
 });
+
+/* ── Custom Intelligent Tooltip ─────────────────────────────────── */
+const customTooltip = document.getElementById('lyrica-tooltip');
+
+function showCustomTooltip(e) {
+  const el = e.currentTarget;
+  // Strictly only show tooltip if the text is physically truncated by CSS
+  if (el.scrollWidth > el.clientWidth && customTooltip) {
+    customTooltip.textContent = el.textContent;
+    const rect = el.getBoundingClientRect();
+    customTooltip.style.left = Math.max(10, rect.left) + 'px';
+    // Position it slightly above the text element
+    customTooltip.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
+    customTooltip.classList.add('show');
+  }
+}
+
+function hideCustomTooltip() {
+  if (customTooltip) customTooltip.classList.remove('show');
+}
+
+if (trackNameEl) {
+  trackNameEl.addEventListener('mouseenter', showCustomTooltip);
+  trackNameEl.addEventListener('mouseleave', hideCustomTooltip);
+}
+if (artistNameEl) {
+  artistNameEl.addEventListener('mouseenter', showCustomTooltip);
+  artistNameEl.addEventListener('mouseleave', hideCustomTooltip);
+}
+

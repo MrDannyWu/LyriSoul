@@ -1515,6 +1515,13 @@ input,
 
 
 /* Dropdown header (avatar + name) */
+.mac-controls {
+  display: none; /* Explicitly hidden on standard web browsers. Unlocked natively by PyWebView JS bridge */
+  align-items: center;
+  gap: 8px;
+  margin-right: 18px;
+}
+
 .user-dropdown-header {
   display: flex;
   align-items: center;
@@ -1623,4 +1630,202 @@ input,
 
 .user-dropdown-logout svg {
   color: inherit;
+}
+
+/* ── Mobile Responsiveness (Compact Bottom Player) ───────────────── */
+@media (max-width: 768px) {
+  .player-layout {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+  
+  .track-panel {
+    position: relative;
+    flex-direction: row;
+    height: 85px;
+    padding: 10px 15px;
+    gap: 10px;
+    border-right: none;
+    border-top: 1px solid var(--glass-border);
+    justify-content: flex-start;
+    align-items: center;
+    overflow: visible;
+  }
+  
+  .album-wrapper {
+    width: 60px;
+    height: 60px;
+    margin-top: 0;
+    flex-shrink: 0; /* Guarantee album never collapses via Flexbox crowding */
+  }
+  
+  .album-glow {
+    filter: blur(14px);
+    opacity: 0.4;
+  }
+  
+  .track-meta {
+    flex: 0 1 auto;
+    align-items: flex-start;
+    text-align: left;
+    margin: 0;
+    max-width: calc(50vw - 180px); /* Strictly offsets the 88px leftward intrusion of the absolute-centered controls */
+    min-width: 0; /* Permits internal text truncation when heavily compressed */
+    overflow: hidden; /* Required to actually activate child white-space truncation */
+    z-index: 10;
+  }
+  
+  .track-name {
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    text-align: left;
+  }
+  
+  .artist-name {
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    margin-top: 2px;
+    text-align: left;
+  }
+  
+  .album-name-small {
+    display: none;
+  }
+  
+  .player-controls {
+    position: absolute; /* The user demands strict absolute centering across the whole screen median */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 0;
+    gap: 6px;
+    z-index: 100;
+  }
+  
+  /* Optimize Shuffle & Repeat buttons to be peripheral */
+  #btn-shuffle, #btn-repeat {
+    opacity: 0.7;
+    transform: scale(0.9);
+    transition: all 0.2s ease;
+  }
+  
+  #btn-shuffle.active, #btn-repeat.active {
+    opacity: 1;
+    transform: scale(0.95);
+  }
+  
+  .control-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    flex-shrink: 0; /* Mathematically prevents the circular buttons from squeezing into vertical ovals under extreme space debt */
+  }
+  
+  .control-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .play-btn {
+    width: 40px;
+    height: 40px;
+  }
+  
+  /* Progress bar snaps to top of the bottom track-panel row */
+  .progress-section {
+    position: absolute;
+    top: -2px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    margin: 0;
+  }
+  
+  .progress-bar-wrap {
+    height: 3px;
+    border-radius: 0;
+  }
+  
+  .progress-bar-bg, .progress-bar-fill {
+    border-radius: 0;
+  }
+  
+  .progress-times {
+    display: none;
+  }
+  
+  .lyrics-panel {
+    flex: 1;
+    padding: 16px 20px;
+  }
+}
+
+/* ── Custom Tooltip ──────────────────────────── */
+.custom-tooltip {
+  position: fixed;
+  background: rgba(10, 15, 25, 0.85);
+  backdrop-filter: blur(12px);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(5px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10000;
+  border: 1px solid rgba(255,255,255,0.1);
+  white-space: nowrap;
+  max-width: 90vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.custom-tooltip.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Ultra-Narrow Screen Optimization (Phones) ───────────────── */
+@media (max-width: 520px) {
+  .track-panel {
+    padding: 10px;
+    gap: 8px;
+  }
+  
+  .album-wrapper {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .track-meta {
+    max-width: calc(50vw - 135px); /* Maximizes text visibility by reclaiming pixels from miniaturized icons */
+  }
+  
+  .player-controls {
+    gap: 2px;
+  }
+  
+  .control-btn {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .control-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .play-btn {
+    width: 32px;
+    height: 32px;
+  }
 }

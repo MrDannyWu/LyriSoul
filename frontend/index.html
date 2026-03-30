@@ -106,11 +106,18 @@
       <div class="topbar-left">
         <!-- macOS-style hover controls -->
         <div class="mac-controls" id="mac-controls">
-          <button class="mac-btn mac-close" id="mac-close" title="Close" onmousedown="event.stopPropagation(); const btn=this; btn.classList.add('clicked'); setTimeout(() => { if(window.pywebview && window.pywebview.api) window.pywebview.api.close_window(); btn.classList.remove('clicked'); }, 150);">
-            <svg viewBox="0 0 14 14"><line x1="4" y1="4" x2="10" y2="10"/><line x1="10" y1="4" x2="4" y2="10"/></svg>
+          <button class="mac-btn mac-close" id="mac-close" title="Close"
+            onmousedown="event.stopPropagation(); const btn=this; btn.classList.add('clicked'); setTimeout(() => { if(window.pywebview && window.pywebview.api) window.pywebview.api.close_window(); btn.classList.remove('clicked'); }, 150);">
+            <svg viewBox="0 0 14 14">
+              <line x1="4" y1="4" x2="10" y2="10" />
+              <line x1="10" y1="4" x2="4" y2="10" />
+            </svg>
           </button>
-          <button class="mac-btn mac-min" id="mac-min" title="Minimize" onmousedown="event.stopPropagation(); const btn=this; btn.classList.add('clicked'); setTimeout(() => { if(window.pywebview && window.pywebview.api) window.pywebview.api.minimize_window(); btn.classList.remove('clicked'); }, 150);">
-            <svg viewBox="0 0 14 14"><line x1="3" y1="7" x2="11" y2="7"/></svg>
+          <button class="mac-btn mac-min" id="mac-min" title="Minimize"
+            onmousedown="event.stopPropagation(); const btn=this; btn.classList.add('clicked'); setTimeout(() => { if(window.pywebview && window.pywebview.api) window.pywebview.api.minimize_window(); btn.classList.remove('clicked'); }, 150);">
+            <svg viewBox="0 0 14 14">
+              <line x1="3" y1="7" x2="11" y2="7" />
+            </svg>
           </button>
         </div>
         <div class="app-badge">
@@ -343,6 +350,9 @@
   </div>
   <!-- Resizer Handle -->
   <div id="resizer"></div>
+
+  <!-- Intelligent Overflow Tooltip -->
+  <div id="lyrica-tooltip" class="custom-tooltip"></div>
 
   <script src="/static/app.js?v=0326.1545"></script>
 </body>

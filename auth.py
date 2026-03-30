@@ -115,13 +115,19 @@ def get_spotify_client(request: Request) -> spotipy.Spotify:
             _save_token(token_info)                       # persist refreshed token
             request.session["token_info"] = token_info
             logger.info("Token refreshed and saved to disk")
-        except Exception as e:
-            logger.warning("Token refresh failed: %s", e)
+        except spotipy.oauth2.SpotifyOauthError as e:
+            logger.warning("Token refresh irrevocably failed (invalid grant): %s", e)
             _delete_token()
             request.session.clear()
             raise HTTPException(
                 status_code=401,
-                detail="Session expired. Please login again via /auth/login",
+                detail="Session expired and refresh revoked. Please login again via /auth/login",
+            )
+        except Exception as e:
+            logger.error("Transient network error refreshing token: %s", e)
+            raise HTTPException(
+                status_code=502,
+                detail="Spotify API is temporarily unreachable. Skipping refresh safely.",
             )
 
     return spotipy.Spotify(auth=token_info["access_token"])
