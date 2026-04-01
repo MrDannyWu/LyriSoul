@@ -189,8 +189,8 @@ if __name__ == "__main__":
     window = webview.create_window(
         "LyriSoul",
         url,
-        width=1280,
-        height=800,
+        width=1500,
+        height=960,
         frameless=True,
         transparent=True,
         js_api=api

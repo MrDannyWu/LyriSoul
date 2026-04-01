@@ -141,19 +141,15 @@ const PALETTES = {
 
 function applyMood(f) {
   if (!f) return;
-  const mood =
-    f.valence >= 0.6 && f.energy >= 0.6 ? 'happy' :
-      f.valence < 0.4 && f.energy >= 0.6 ? 'angry' :
-        f.valence >= 0.6 && f.energy < 0.4 ? 'peaceful' : 'melancholic';
-
-  const p = PALETTES[mood];
-  const speed = clamp(lerp(28, 8, f.energy), 8, 30).toFixed(1);
+  // During playback, override mood-driven background styles to transparent
+  // so lyrics are displayed without distracting mood colors
   const root = document.documentElement;
-  root.style.setProperty('--mood-a', p.a);
-  root.style.setProperty('--mood-b', p.b);
-  root.style.setProperty('--mood-c', p.c);
-  root.style.setProperty('--blob-speed', `${speed}s`);
-  albumGlow.style.background = p.a;
+  root.style.setProperty('--bg-base', 'transparent');
+  root.style.setProperty('--mood-a', 'transparent');
+  root.style.setProperty('--mood-b', 'transparent');
+  root.style.setProperty('--mood-c', 'transparent');
+  root.style.setProperty('--mood-d', 'transparent');
+  albumGlow.style.background = 'transparent';
 }
 
 
@@ -322,6 +318,18 @@ function updateTrack(data) {
   // This guards against Spotify's occasional reporting lag (returns is_playing: false while audibly playing)
   const progressAdvanced = !trackChanged && track.progress_ms > prevProgressMs;
   state.isPlaying = track.is_playing || progressAdvanced;
+
+  // During playback, remove mood-driven background styles
+  // (--bg-base, --mood-a/b/c/d) so lyrics display cleanly
+  if (state.isPlaying) {
+    const root = document.documentElement;
+    root.style.setProperty('--bg-base', 'transparent');
+    root.style.setProperty('--mood-a', 'transparent');
+    root.style.setProperty('--mood-b', 'transparent');
+    root.style.setProperty('--mood-c', 'transparent');
+    root.style.setProperty('--mood-d', 'transparent');
+    albumGlow.style.background = 'transparent';
+  }
 
   timeTotal.textContent = formatTime(track.duration_ms);
 

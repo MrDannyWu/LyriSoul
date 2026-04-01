@@ -6,16 +6,16 @@
 /* ── Tokens ─────────────────────────────────────────────────────── */
 :root {
   --bg-base: #080c14;
-  --glass-bg: rgba(255, 255, 255, 0.06);
-  --glass-border: rgba(255, 255, 255, 0.10);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --text-primary: #f0f4ff;
-  --text-secondary: rgba(240, 244, 255, 0.55);
-  --text-muted: rgba(240, 244, 255, 0.30);
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.07);
+  --glass-shadow: 0 12px 48px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.15);
+  --text-primary: #edf1fc;
+  --text-secondary: rgba(237, 241, 252, 0.50);
+  --text-muted: rgba(237, 241, 252, 0.28);
   --accent: #1DB954;
-  --accent-dim: rgba(29, 185, 84, 0.25);
-  --radius-card: 24px;
-  --radius-sm: 12px;
+  --accent-dim: rgba(29, 185, 84, 0.20);
+  --radius-card: 28px;
+  --radius-sm: 14px;
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Inter', sans-serif;
   /* Mood colours injected by JS */
@@ -162,16 +162,16 @@ input,
 .glass {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(32px) saturate(160%);
+  -webkit-backdrop-filter: blur(32px) saturate(160%);
   box-shadow: var(--glass-shadow);
 }
 
 .glass-subtle {
-  background: rgba(255, 255, 255, 0.04);
-  border-bottom: 1px solid var(--glass-border);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
 }
 
 /* ── Screen system ───────────────────────────────────────────────── */
@@ -438,8 +438,10 @@ input,
   z-index: 99990;
   /* Replaced ::before pseudo element with pure padding for massive hover hit-box */
   padding: 20px 20px 20px 10px;
-  margin: -20px -20px -20px -24px; /* Shifted left by decreasing the left margin */
-  -webkit-app-region: no-drag; /* Forcibly decouple from DWM drag frame */
+  margin: -20px -20px -20px -24px;
+  /* Shifted left by decreasing the left margin */
+  -webkit-app-region: no-drag;
+  /* Forcibly decouple from DWM drag frame */
 }
 
 /* Remove pseudo element hijacking */
@@ -464,7 +466,8 @@ input,
   -webkit-app-region: no-drag;
 }
 
-.mac-btn:active, .mac-btn.clicked {
+.mac-btn:active,
+.mac-btn.clicked {
   transform: scale(0.85) !important;
   filter: brightness(0.8);
 }
@@ -480,13 +483,27 @@ input,
 }
 
 /* Reveal colors and icons on hover over the controls area */
-.topbar-left:hover .mac-btn svg { opacity: 1; }
+.topbar-left:hover .mac-btn svg {
+  opacity: 1;
+}
 
-.topbar-left:hover .mac-close { background: #ff5f56; }
-.topbar-left:hover .mac-close:hover { transform: scale(1.15); background: #ff5f56; }
+.topbar-left:hover .mac-close {
+  background: #ff5f56;
+}
 
-.topbar-left:hover .mac-min { background: #ffbd2e; }
-.topbar-left:hover .mac-min:hover { transform: scale(1.15); background: #ffbd2e; }
+.topbar-left:hover .mac-close:hover {
+  transform: scale(1.15);
+  background: #ff5f56;
+}
+
+.topbar-left:hover .mac-min {
+  background: #ffbd2e;
+}
+
+.topbar-left:hover .mac-min:hover {
+  transform: scale(1.15);
+  background: #ffbd2e;
+}
 
 .app-badge {
   display: flex;
@@ -531,7 +548,7 @@ input,
   top: 56px;
   display: grid;
   /* Adaptive fluid columns instead of hardcoded 380px */
-  grid-template-columns: clamp(320px, 40vw, 450px) 1fr;
+  grid-template-columns: clamp(380px, 45vw, 520px) 1fr;
   overflow: hidden;
 }
 
@@ -545,7 +562,7 @@ input,
   /* Vertically center album and controls */
   gap: 20px;
   overflow-y: auto;
-  border-right: 1px solid var(--glass-border);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .track-panel::-webkit-scrollbar {
@@ -555,8 +572,8 @@ input,
 /* Album art */
 .album-wrapper {
   position: relative;
-  width: 320px;
-  height: 320px;
+  width: 380px;
+  height: 380px;
   flex-shrink: 0;
   margin-top: 8px;
 }
@@ -576,10 +593,10 @@ input,
   position: relative;
   width: 100%;
   height: 100%;
-  border-radius: 20px;
+  border-radius: 24px;
   object-fit: cover;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  transition: transform .5s ease;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45), 0 8px 24px rgba(0, 0, 0, 0.2);
+  transition: transform .6s cubic-bezier(0.2, 0.8, 0.2, 1);
   z-index: 1;
 }
 
@@ -590,8 +607,8 @@ input,
 .vinyl-ring {
   position: absolute;
   inset: -4px;
-  border-radius: 24px;
-  border: 2px solid var(--glass-border);
+  border-radius: 28px;
+  border: 1.5px solid rgba(255, 255, 255, 0.06);
   z-index: 2;
   pointer-events: none;
 }
@@ -604,14 +621,14 @@ input,
 
 .track-name {
   font-family: var(--font-display);
-  font-size: 1.35rem;
+  font-size: 1.6rem;
   font-weight: 700;
   line-height: 1.3;
   margin: 0 auto 6px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 310px;
+  max-width: 380px;
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -622,20 +639,20 @@ input,
   top: 40px;
   left: 50%;
   transform: translateX(-50%) translateY(-20px);
-  background: rgba(30, 30, 30, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(24, 26, 34, 0.80);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
   color: white;
   padding: 14px 28px;
-  border-radius: 8px;
+  border-radius: 16px;
   font-size: 0.95rem;
   font-weight: 500;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   opacity: 0;
   pointer-events: none;
   z-index: 10000;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   max-width: 90%;
   text-align: center;
 }
@@ -658,7 +675,7 @@ input,
 }
 
 .artist-name {
-  font-size: 1rem;
+  font-size: 1.15rem;
   color: var(--text-secondary);
   font-weight: 500;
 }
@@ -688,7 +705,7 @@ input,
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s, transform 0.2s;
+  transition: color 0.3s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.3s ease;
   padding: 8px;
   border-radius: 50%;
   position: relative;
@@ -697,7 +714,8 @@ input,
 
 .control-btn:hover {
   color: var(--text-primary);
-  transform: scale(1.1);
+  transform: scale(1.08);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .control-btn.play-btn {
@@ -705,12 +723,13 @@ input,
   color: #000;
   width: 48px;
   height: 48px;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease;
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
 }
 
 .control-btn.play-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.2);
+  transform: scale(1.06);
+  box-shadow: 0 6px 28px rgba(255, 255, 255, 0.18);
 }
 
 .control-btn.active {
@@ -725,7 +744,8 @@ input,
 
 /* Progress */
 .progress-section {
-  width: 100%;
+  width: 380px;
+  max-width: 100%;
 }
 
 .progress-bar-wrap {
@@ -738,7 +758,7 @@ input,
 }
 
 .progress-bar-bg {
-  height: 4px;
+  height: 6px;
   width: 100%;
   background: rgba(255, 255, 255, 0.15);
   border-radius: 4px;
@@ -747,7 +767,7 @@ input,
 }
 
 .progress-bar-wrap:hover .progress-bar-bg {
-  height: 6px;
+  height: 8px;
   background: rgba(255, 255, 255, 0.25);
 }
 
@@ -813,7 +833,7 @@ input,
   gap: 12px;
   padding: 0 40px 20px;
   flex-shrink: 0;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .lyrics-label {
@@ -874,34 +894,34 @@ input,
 
 /* Lyric lines */
 .lyric-line {
-  padding: 14px 0;
-  line-height: 1.5;
-  font-size: 1.6rem;
+  padding: 16px 0;
+  line-height: 1.55;
+  font-size: 2rem;
   font-family: var(--font-display);
   font-weight: 400;
-  color: rgba(240, 244, 255, 0.25);
+  color: rgba(237, 241, 252, 0.22);
   cursor: pointer;
-  transition: color .35s ease, font-size .35s cubic-bezier(0.2, 0.8, 0.2, 1), font-weight .35s ease, transform .35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: color .45s cubic-bezier(0.16, 1, 0.3, 1), font-size .45s cubic-bezier(0.16, 1, 0.3, 1), font-weight .45s ease, transform .45s cubic-bezier(0.16, 1, 0.3, 1), opacity .45s ease;
   transform-origin: center;
-  border-bottom: 1px solid transparent;
+  border-bottom: none;
   position: relative;
   text-align: center;
 }
 
 .lyric-line.active {
   color: var(--text-primary);
-  font-size: 2.25rem;
+  font-size: 2.8rem;
   font-weight: 700;
-  transform: scale(1.02);
-  border-bottom-color: transparent;
+  transform: scale(1.01);
+  text-shadow: 0 2px 20px rgba(237, 241, 252, 0.12);
 }
 
 .lyric-line.past {
-  color: rgba(240, 244, 255, 0.12);
+  color: rgba(237, 241, 252, 0.10);
 }
 
 .lyric-line:hover:not(.active) {
-  color: rgba(240, 244, 255, 0.45);
+  color: rgba(237, 241, 252, 0.38);
 }
 
 /* Plain lyrics (no sync) */
@@ -1516,7 +1536,8 @@ input,
 
 /* Dropdown header (avatar + name) */
 .mac-controls {
-  display: none; /* Explicitly hidden on standard web browsers. Unlocked natively by PyWebView JS bridge */
+  display: none;
+  /* Explicitly hidden on standard web browsers. Unlocked natively by PyWebView JS bridge */
   align-items: center;
   gap: 8px;
   margin-right: 18px;
@@ -1638,7 +1659,7 @@ input,
     display: flex;
     flex-direction: column-reverse;
   }
-  
+
   .track-panel {
     position: relative;
     flex-direction: row;
@@ -1651,30 +1672,34 @@ input,
     align-items: center;
     overflow: visible;
   }
-  
+
   .album-wrapper {
     width: 60px;
     height: 60px;
     margin-top: 0;
-    flex-shrink: 0; /* Guarantee album never collapses via Flexbox crowding */
+    flex-shrink: 0;
+    /* Guarantee album never collapses via Flexbox crowding */
   }
-  
+
   .album-glow {
     filter: blur(14px);
     opacity: 0.4;
   }
-  
+
   .track-meta {
     flex: 0 1 auto;
     align-items: flex-start;
     text-align: left;
     margin: 0;
-    max-width: calc(50vw - 180px); /* Strictly offsets the 88px leftward intrusion of the absolute-centered controls */
-    min-width: 0; /* Permits internal text truncation when heavily compressed */
-    overflow: hidden; /* Required to actually activate child white-space truncation */
+    max-width: calc(50vw - 180px);
+    /* Strictly offsets the 88px leftward intrusion of the absolute-centered controls */
+    min-width: 0;
+    /* Permits internal text truncation when heavily compressed */
+    overflow: hidden;
+    /* Required to actually activate child white-space truncation */
     z-index: 10;
   }
-  
+
   .track-name {
     font-size: 0.95rem;
     white-space: nowrap;
@@ -1683,7 +1708,7 @@ input,
     width: 100%;
     text-align: left;
   }
-  
+
   .artist-name {
     font-size: 0.75rem;
     white-space: nowrap;
@@ -1693,13 +1718,14 @@ input,
     margin-top: 2px;
     text-align: left;
   }
-  
+
   .album-name-small {
     display: none;
   }
-  
+
   .player-controls {
-    position: absolute; /* The user demands strict absolute centering across the whole screen median */
+    position: absolute;
+    /* The user demands strict absolute centering across the whole screen median */
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -1709,36 +1735,39 @@ input,
     gap: 6px;
     z-index: 100;
   }
-  
+
   /* Optimize Shuffle & Repeat buttons to be peripheral */
-  #btn-shuffle, #btn-repeat {
+  #btn-shuffle,
+  #btn-repeat {
     opacity: 0.7;
     transform: scale(0.9);
     transition: all 0.2s ease;
   }
-  
-  #btn-shuffle.active, #btn-repeat.active {
+
+  #btn-shuffle.active,
+  #btn-repeat.active {
     opacity: 1;
     transform: scale(0.95);
   }
-  
+
   .control-btn {
     width: 28px;
     height: 28px;
     padding: 0;
-    flex-shrink: 0; /* Mathematically prevents the circular buttons from squeezing into vertical ovals under extreme space debt */
+    flex-shrink: 0;
+    /* Mathematically prevents the circular buttons from squeezing into vertical ovals under extreme space debt */
   }
-  
+
   .control-btn svg {
     width: 14px;
     height: 14px;
   }
-  
+
   .play-btn {
     width: 40px;
     height: 40px;
   }
-  
+
   /* Progress bar snaps to top of the bottom track-panel row */
   .progress-section {
     position: absolute;
@@ -1748,20 +1777,21 @@ input,
     width: 100%;
     margin: 0;
   }
-  
+
   .progress-bar-wrap {
     height: 3px;
     border-radius: 0;
   }
-  
-  .progress-bar-bg, .progress-bar-fill {
+
+  .progress-bar-bg,
+  .progress-bar-fill {
     border-radius: 0;
   }
-  
+
   .progress-times {
     display: none;
   }
-  
+
   .lyrics-panel {
     flex: 1;
     padding: 16px 20px;
@@ -1782,13 +1812,14 @@ input,
   transform: translateY(5px);
   transition: opacity 0.2s ease, transform 0.2s ease;
   z-index: 10000;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   white-space: nowrap;
   max-width: 90vw;
   overflow: hidden;
   text-overflow: ellipsis;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
+
 .custom-tooltip.show {
   opacity: 1;
   transform: translateY(0);
@@ -1800,30 +1831,31 @@ input,
     padding: 10px;
     gap: 8px;
   }
-  
+
   .album-wrapper {
     width: 44px;
     height: 44px;
   }
-  
+
   .track-meta {
-    max-width: calc(50vw - 135px); /* Maximizes text visibility by reclaiming pixels from miniaturized icons */
+    max-width: calc(50vw - 135px);
+    /* Maximizes text visibility by reclaiming pixels from miniaturized icons */
   }
-  
+
   .player-controls {
     gap: 2px;
   }
-  
+
   .control-btn {
     width: 24px;
     height: 24px;
   }
-  
+
   .control-btn svg {
     width: 12px;
     height: 12px;
   }
-  
+
   .play-btn {
     width: 32px;
     height: 32px;
