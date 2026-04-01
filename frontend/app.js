@@ -144,12 +144,12 @@ function applyMood(f) {
   // During playback, override mood-driven background styles to transparent
   // so lyrics are displayed without distracting mood colors
   const root = document.documentElement;
-  root.style.setProperty('--bg-base', 'transparent');
-  root.style.setProperty('--mood-a', 'transparent');
-  root.style.setProperty('--mood-b', 'transparent');
-  root.style.setProperty('--mood-c', 'transparent');
-  root.style.setProperty('--mood-d', 'transparent');
-  albumGlow.style.background = 'transparent';
+  // root.style.setProperty('--bg-base', 'transparent');
+  // root.style.setProperty('--mood-a', 'transparent');
+  // root.style.setProperty('--mood-b', 'transparent');
+  // root.style.setProperty('--mood-c', 'transparent');
+  // root.style.setProperty('--mood-d', 'transparent');
+  // albumGlow.style.background = 'transparent';
 }
 
 
@@ -1271,11 +1271,11 @@ window.addEventListener('pywebviewready', () => {
   if (window.pywebview && window.pywebview.api && window.pywebview.api.set_language) {
     window.pywebview.api.set_language(window.i18n.getCurrent());
   }
-  
+
   // Exclusively render native OS window controls on Desktop execution
   const macControls = document.getElementById('mac-controls');
   if (macControls) {
-      macControls.style.display = 'flex';
+    macControls.style.display = 'flex';
   }
 });
 

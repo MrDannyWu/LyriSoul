@@ -119,6 +119,12 @@
               <line x1="3" y1="7" x2="11" y2="7" />
             </svg>
           </button>
+          <button class="mac-btn mac-max" id="mac-max" title="Maximize"
+            onmousedown="event.stopPropagation(); const btn=this; btn.classList.add('clicked'); setTimeout(() => { if(window.pywebview && window.pywebview.api) window.pywebview.api.toggle_maximize(); btn.classList.remove('clicked'); }, 150);">
+            <svg viewBox="0 0 14 14">
+              <rect x="3" y="3" width="8" height="8" fill="none" rx="1"/>
+            </svg>
+          </button>
         </div>
         <div class="app-badge">
           <svg width="30" height="30" viewBox="0 0 48 48" fill="none">

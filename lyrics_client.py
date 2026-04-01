@@ -516,6 +516,7 @@ async def get_lyrics(artist: str, track: str, duration_ms: int = 0) -> LyricsRes
     # Fix for Spotify -> Netease/KuGou Pinyin blindspots.
     # Chinese streaming APIs often return literally ZERO results for Pinyin aliases.
     PINYIN_ARTIST_MAP = {
+        "instinkto industrio": "本能实业",
         "zhu zheng ting": "朱正廷",
         "zhu ming ying4": "朱明瑛",
         "zhu ming ying3": "朱明瑛",

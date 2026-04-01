@@ -68,6 +68,16 @@ class NativeApi:
             self._window.destroy()
             os._exit(0)
 
+    def toggle_maximize(self):
+        hwnd = self._get_hwnd()
+        if hwnd:
+            if getattr(self, 'is_maximized', False):
+                ctypes.windll.user32.ShowWindow(hwnd, 9) # SW_RESTORE
+                self.is_maximized = False
+            else:
+                ctypes.windll.user32.ShowWindow(hwnd, 3) # SW_MAXIMIZE
+                self.is_maximized = True
+
 
     def _get_hwnd(self):
         if hasattr(self, '_hwnd_cache') and self._hwnd_cache and ctypes.windll.user32.IsWindow(self._hwnd_cache):
@@ -80,6 +90,17 @@ class NativeApi:
 
         def callback(handle, _):
             nonlocal hwnd
+            # Bulletproof check: Ensure the window belongs to THIS process!
+            pid = ctypes.c_ulong()
+            ctypes.windll.user32.GetWindowThreadProcessId(handle, ctypes.byref(pid))
+            if pid.value != os.getpid():
+                return True
+                
+            # MUST BE VISIBLE: Webview2 creates hidden helper windows that share the same PID and sometimes title!
+            # If we ShowWindow(MAXIMIZE) on a hidden window, a stuck weird window pops up.
+            if not ctypes.windll.user32.IsWindowVisible(handle):
+                return True
+                
             length = ctypes.windll.user32.GetWindowTextLengthW(handle)
             if length > 0:
                 buff = ctypes.create_unicode_buffer(length + 1)
@@ -189,7 +210,7 @@ if __name__ == "__main__":
     window = webview.create_window(
         "LyriSoul",
         url,
-        width=1500,
+        width=1560,
         height=960,
         frameless=True,
         transparent=True,

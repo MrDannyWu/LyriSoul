@@ -14,6 +14,7 @@ Token lifecycle:
 import logging
 import json
 import os
+import threading
 from typing import Optional
 
 import spotipy
@@ -27,6 +28,11 @@ from models import AuthStatusResponse
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# Global lock to prevent polling race conditions during token refresh
+_refresh_lock = threading.Lock()
+# Global lock to prevent JSONDecodeErrors during concurrent disk IO
+_file_lock = threading.Lock()
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Persistent token storage (survives restarts)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -37,24 +43,34 @@ def _token_path() -> str:
 
 def _load_token() -> Optional[dict]:
     path = _token_path()
-    if os.path.exists(path):
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return None
+    with _file_lock:
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.error("Failed to load spotify_token.json: %s", e)
+                pass
+        return None
 
 def _save_token(token_info: dict):
     path = _token_path()
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(token_info, f)
+    with _file_lock:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        # Use a temporary file for atomic write to avoid 0-byte reads by other processes
+        temp_path = path + ".tmp"
+        with open(temp_path, "w", encoding="utf-8") as f:
+            json.dump(token_info, f)
+        os.replace(temp_path, path)
 
 def _delete_token():
     path = _token_path()
-    if os.path.exists(path):
-        os.remove(path)
+    with _file_lock:
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
 
 
 def _pkce_path() -> str:
@@ -110,25 +126,41 @@ def get_spotify_client(request: Request) -> spotipy.Spotify:
 
     oauth = _get_oauth_manager()
     if oauth.is_token_expired(token_info):
-        try:
-            token_info = oauth.refresh_access_token(token_info["refresh_token"])
-            _save_token(token_info)                       # persist refreshed token
-            request.session["token_info"] = token_info
-            logger.info("Token refreshed and saved to disk")
-        except spotipy.oauth2.SpotifyOauthError as e:
-            logger.warning("Token refresh irrevocably failed (invalid grant): %s", e)
-            _delete_token()
-            request.session.clear()
-            raise HTTPException(
-                status_code=401,
-                detail="Session expired and refresh revoked. Please login again via /auth/login",
-            )
-        except Exception as e:
-            logger.error("Transient network error refreshing token: %s", e)
-            raise HTTPException(
-                status_code=502,
-                detail="Spotify API is temporarily unreachable. Skipping refresh safely.",
-            )
+        with _refresh_lock:
+            # Stale HTTP cookies in concurrent requests can hold old tokens.
+            # Must read directly from disk inside the lock to see if another thread already refreshed it!
+            latest_token_info = _load_token()
+            if latest_token_info and not oauth.is_token_expired(latest_token_info):
+                # Another thread refreshed it successfully. Update our session and return.
+                request.session["token_info"] = latest_token_info
+                return spotipy.Spotify(auth=latest_token_info["access_token"])
+                
+            # Still expired, proceed with refresh using the latest refresh token on disk (or session fallback)
+            old_refresh = latest_token_info.get("refresh_token") if latest_token_info else token_info.get("refresh_token")
+            try:
+                new_token_info = oauth.refresh_access_token(old_refresh)
+                # Spotipy/Spotify might drop the refresh_token in the response. Preserve it.
+                if "refresh_token" not in new_token_info and old_refresh:
+                    new_token_info["refresh_token"] = old_refresh
+                
+                _save_token(new_token_info)                       # persist refreshed token
+                request.session["token_info"] = new_token_info
+                token_info = new_token_info
+                logger.info("Token refreshed and saved to disk")
+            except spotipy.oauth2.SpotifyOauthError as e:
+                logger.warning("Token refresh irrevocably failed (invalid grant): %s", e)
+                _delete_token()
+                request.session.clear()
+                raise HTTPException(
+                    status_code=401,
+                    detail="Session expired and refresh revoked. Please login again via /auth/login",
+                )
+            except Exception as e:
+                logger.error("Transient network error refreshing token: %s", e)
+                raise HTTPException(
+                    status_code=502,
+                    detail="Spotify API is temporarily unreachable. Skipping refresh safely.",
+                )
 
     return spotipy.Spotify(auth=token_info["access_token"])
 
